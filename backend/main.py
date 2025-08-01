@@ -6,9 +6,13 @@ import asyncio
 from datetime import datetime, timedelta
 import random
 import uuid
+import os
+import sys
+import argparse
 
 from services.graph_service import GraphService
 from services.fraud_detection import FraudDetectionService
+from services.transaction_generator import get_transaction_generator
 from models.schemas import (
     User, Account, Transaction, UserSummary, 
     TransactionDetail, FraudPattern, FraudResult
@@ -19,26 +23,73 @@ from logging_config import setup_logging, get_logger
 setup_logging()
 logger = get_logger('fraud_detection.api')
 
+# Global variables for command line flags
+args = None
+
+# Parse command line arguments
+def parse_arguments():
+    parser = argparse.ArgumentParser(description='Fraud Detection API Server')
+    parser.add_argument('-d', '--delete', action='store_true', 
+                       help='Delete all data from the graph database on startup')
+    parser.add_argument('-l', '--load-users', action='store_true',
+                       help='Load only user data (no transactions) from users.json on startup')
+    parser.add_argument('--host', default='0.0.0.0', help='Host to bind to (default: 0.0.0.0)')
+    parser.add_argument('--port', type=int, default=4000, help='Port to bind to (default: 4000)')
+    return parser.parse_args()
+
 # Initialize services
 graph_service = GraphService()
 fraud_service = FraudDetectionService(graph_service)
+transaction_generator = get_transaction_generator(graph_service)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global args
+    
     # Startup
     logger.info("Starting Fraud Detection API")
+    logger.info(f"Command line arguments: {args}")
     await graph_service.connect()
     
-    # Automatically load users.json data on startup
-    logger.info("Loading users.json data into graph database...")
-    try:
-        result = await graph_service.seed_sample_data()
-        if "error" in result:
-            logger.error(f"Failed to load data: {result['error']}")
-        else:
-            logger.info(f"✅ Data loaded successfully: {result['users']} users, {result['accounts']} accounts, {result['transactions']} transactions")
-    except Exception as e:
-        logger.error(f"Error during data loading: {e}")
+    # Handle command line flags
+    if args and args.delete:
+        logger.info("🗑️  Deleting all data from graph database...")
+        try:
+            result = await graph_service.delete_all_data()
+            if "error" in result:
+                logger.error(f"Failed to delete data: {result['error']}")
+            else:
+                logger.info("✅ All data deleted successfully")
+        except Exception as e:
+            logger.error(f"Error during data deletion: {e}")
+    
+    if args and args.load_users:
+        logger.info("📂 Loading user data from users.json...")
+        try:
+            result = await graph_service.load_users_only()
+            if "error" in result:
+                logger.error(f"Failed to load user data: {result['error']}")
+            else:
+                logger.info(f"✅ User data loaded successfully: {result['users']} users, {result['accounts']} accounts")
+        except Exception as e:
+            logger.error(f"Error during user data loading: {e}")
+    
+    # Only automatically load users.json data if AUTO_LOAD_DATA is set to true and no flags are specified
+    auto_load_data = os.getenv('AUTO_LOAD_DATA', 'false').lower() == 'true'
+    logger.info(f"AUTO_LOAD_DATA environment variable: {auto_load_data}")
+    
+    if auto_load_data and (not args or (not args.delete and not args.load_users)):
+        logger.info("Loading users.json data into graph database...")
+        try:
+            result = await graph_service.seed_sample_data()
+            if "error" in result:
+                logger.error(f"Failed to load data: {result['error']}")
+            else:
+                logger.info(f"✅ Data loaded successfully: {result['users']} users, {result['accounts']} accounts, {result['transactions']} transactions")
+        except Exception as e:
+            logger.error(f"Error during data loading: {e}")
+    elif not args or (not args.delete and not args.load_users):
+        logger.info("Skipping automatic data loading (no flags specified and AUTO_LOAD_DATA=false)")
     
     yield
     
@@ -92,7 +143,6 @@ async def seed_data():
         raise HTTPException(status_code=500, detail=f"Failed to load data: {str(e)}")
 
 
-
 @app.get("/detect/fraudulent-transactions")
 async def detect_fraudulent_transactions():
     """Run Gremlin queries to find suspicious transactions"""
@@ -118,6 +168,36 @@ async def get_user_summary(user_id: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get user summary: {str(e)}")
+
+@app.get("/user/{user_id}/transactions")
+async def get_user_transactions(
+    user_id: str,
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(20, ge=1, le=100, description="Number of transactions per page")
+):
+    """Get paginated list of transactions for a specific user"""
+    try:
+        transactions = await graph_service.get_user_transactions_paginated(user_id, page, page_size)
+        if not transactions:
+            raise HTTPException(status_code=404, detail="User not found")
+        return transactions
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get user transactions: {str(e)}")
+
+@app.get("/user/{user_id}/accounts")
+async def get_user_accounts(user_id: str):
+    """Get all accounts for a specific user"""
+    try:
+        accounts = await graph_service.get_user_accounts(user_id)
+        if not accounts:
+            raise HTTPException(status_code=404, detail="User not found")
+        return {"user_id": user_id, "accounts": accounts}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get user accounts: {str(e)}")
 
 @app.get("/transaction/{transaction_id}")
 async def get_transaction_detail(transaction_id: str):
@@ -215,6 +295,67 @@ async def update_transaction_status(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update transaction status: {str(e)}")
 
+# Transaction Generation Endpoints
+@app.post("/transaction-generation/start")
+async def start_transaction_generation(rate: int = Query(1, ge=1, le=5, description="Generation rate (1-5 transactions per second)")):
+    """Start transaction generation at specified rate"""
+    try:
+        success = await transaction_generator.start_generation(rate)
+        if success:
+            logger.info(f"🎯 Transaction generation started at {rate} transactions/second")
+            return {
+                "message": f"Transaction generation started at {rate} transactions/second",
+                "status": "started",
+                "rate": rate
+            }
+        else:
+            raise HTTPException(status_code=400, detail="Transaction generation is already running")
+    except Exception as e:
+        logger.error(f"❌ Failed to start transaction generation: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to start transaction generation: {str(e)}")
+
+@app.post("/transaction-generation/stop")
+async def stop_transaction_generation():
+    """Stop transaction generation"""
+    try:
+        success = await transaction_generator.stop_generation()
+        if success:
+            logger.info("🛑 Transaction generation stopped")
+            return {
+                "message": "Transaction generation stopped",
+                "status": "stopped"
+            }
+        else:
+            raise HTTPException(status_code=400, detail="Transaction generation is not running")
+    except Exception as e:
+        logger.error(f"❌ Failed to stop transaction generation: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to stop transaction generation: {str(e)}")
+
+@app.get("/transaction-generation/status")
+async def get_transaction_generation_status():
+    """Get current transaction generation status"""
+    try:
+        status = transaction_generator.get_status()
+        return status
+    except Exception as e:
+        logger.error(f"❌ Failed to get transaction generation status: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get status: {str(e)}")
+
+@app.get("/transaction-generation/recent")
+async def get_recent_transactions(limit: int = Query(10, ge=1, le=100, description="Number of recent transactions to return")):
+    """Get recent transactions generated by the service"""
+    try:
+        recent_transactions = transaction_generator.get_recent_transactions(limit)
+        return {
+            "transactions": recent_transactions,
+            "count": len(recent_transactions)
+        }
+    except Exception as e:
+        logger.error(f"❌ Failed to get recent transactions: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get recent transactions: {str(e)}")
+
 if __name__ == "__main__":
+    args = parse_arguments() # Parse arguments here
+    logger.info(f"Parsed arguments: delete={args.delete}, load_users={args.load_users}, host={args.host}, port={args.port}")
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=4000) 
+    uvicorn.run(app, host=args.host, port=args.port) 

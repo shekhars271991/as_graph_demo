@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Search, User, Mail, MapPin, Calendar, Shield, ChevronLeft, ChevronRight, Loader2, X, CreditCard, DollarSign, Clock, ArrowRight } from 'lucide-react'
+import { Search, User, Mail, MapPin, Calendar, Shield, ChevronLeft, ChevronRight, Loader2, X, CreditCard, DollarSign, Clock, ArrowRight, Eye, Filter } from 'lucide-react'
 import { api } from '@/lib/api'
+import Link from 'next/link'
 
 interface User {
   id: string
@@ -58,30 +59,53 @@ export default function UsersPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalUsers, setTotalUsers] = useState(0)
-  const [pageSize] = useState(12) // 12 users per page (4 rows of 3 cards)
-  
-  // User details modal state
-  const [selectedUser, setSelectedUser] = useState<User | null>(null)
-  const [userDetails, setUserDetails] = useState<UserSummary | null>(null)
-  const [loadingDetails, setLoadingDetails] = useState(false)
-  const [showModal, setShowModal] = useState(false)
+  const [pageSize] = useState(20) // Increased page size for list view
+  const [sortBy, setSortBy] = useState<'name' | 'risk_score' | 'signup_date'>('name')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+  const [riskFilter, setRiskFilter] = useState<'all' | 'low' | 'medium' | 'high'>('all')
 
   // Load all users on component mount
   useEffect(() => {
     loadAllUsers()
-  }, [currentPage])
+  }, [currentPage, sortBy, sortOrder, riskFilter])
 
   const loadAllUsers = async () => {
     setLoading(true)
     try {
       const response = await api.get(`/users?page=${currentPage}&page_size=${pageSize}`)
       const data: PaginatedUsers = response.data
-      setUsers(data.users || [])
+      let filteredUsers = data.users || []
+      
+      // Apply risk filter
+      if (riskFilter !== 'all') {
+        filteredUsers = filteredUsers.filter(user => {
+          const risk = getRiskLevel(user.risk_score)
+          return risk.level.toLowerCase() === riskFilter
+        })
+      }
+      
+      // Apply sorting
+      filteredUsers.sort((a, b) => {
+        let aValue: any = a[sortBy]
+        let bValue: any = b[sortBy]
+        
+        if (sortBy === 'name') {
+          aValue = aValue.toLowerCase()
+          bValue = bValue.toLowerCase()
+        }
+        
+        if (sortOrder === 'asc') {
+          return aValue > bValue ? 1 : -1
+        } else {
+          return aValue < bValue ? 1 : -1
+        }
+      })
+      
+      setUsers(filteredUsers)
       setTotalPages(data.total_pages || 1)
       setTotalUsers(data.total || 0)
     } catch (error) {
       console.error('Failed to load users:', error)
-      // Fallback to mock data if API fails
       setUsers([])
     } finally {
       setLoading(false)
@@ -90,7 +114,6 @@ export default function UsersPage() {
 
   const searchUsers = async () => {
     if (!searchQuery.trim()) {
-      // If search is cleared, load all users
       setCurrentPage(1)
       loadAllUsers()
       return
@@ -112,7 +135,7 @@ export default function UsersPage() {
   }
 
   const handleSearch = () => {
-    setCurrentPage(1) // Reset to first page when searching
+    setCurrentPage(1)
     searchUsers()
   }
 
@@ -131,52 +154,18 @@ export default function UsersPage() {
     return new Date(dateString).toLocaleDateString()
   }
 
-  const handleViewDetails = async (user: User) => {
-    setSelectedUser(user)
-    setShowModal(true)
-    setLoadingDetails(true)
-    
-    try {
-      const response = await api.get(`/user/${user.id}/summary`)
-      setUserDetails(response.data)
-    } catch (error) {
-      console.error('Failed to load user details:', error)
-      // Create mock user details if API fails
-      setUserDetails({
-        user: user,
-        accounts: [
-          {
-            id: 'account_1',
-            account_type: 'checking',
-            balance: 2500.00,
-            created_date: user.signup_date
-          }
-        ],
-        recent_transactions: [
-          {
-            id: 'tx_1',
-            amount: 150.00,
-            currency: 'USD',
-            timestamp: new Date().toISOString(),
-            status: 'completed',
-            fraud_score: user.risk_score
-          }
-        ],
-        total_transactions: 1,
-        total_amount_sent: 150.00,
-        total_amount_received: 0,
-        fraud_risk_level: getRiskLevel(user.risk_score).level,
-        connected_users: []
-      })
-    } finally {
-      setLoadingDetails(false)
+  const handleSort = (field: 'name' | 'risk_score' | 'signup_date') => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortBy(field)
+      setSortOrder('asc')
     }
   }
 
-  const closeModal = () => {
-    setShowModal(false)
-    setSelectedUser(null)
-    setUserDetails(null)
+  const getSortIcon = (field: 'name' | 'risk_score' | 'signup_date') => {
+    if (sortBy !== field) return null
+    return sortOrder === 'asc' ? '↑' : '↓'
   }
 
   return (
@@ -184,21 +173,26 @@ export default function UsersPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">User Explorer</h1>
         <p className="text-muted-foreground">
-          Browse and search user profiles with pagination
+          Browse and search user profiles with detailed information
         </p>
       </div>
 
+      {/* Search and Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Search Users</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Search className="h-5 w-5" />
+            Search & Filters
+          </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="flex gap-2">
             <Input
               placeholder="Search by user ID or name..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              className="flex-1"
             />
             <Button onClick={handleSearch} disabled={searchLoading}>
               {searchLoading ? (
@@ -220,6 +214,23 @@ export default function UsersPage() {
                 Clear
               </Button>
             )}
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Risk Level:</span>
+              <select
+                value={riskFilter}
+                onChange={(e) => setRiskFilter(e.target.value as any)}
+                className="px-3 py-1 border rounded-md text-sm"
+              >
+                <option value="all">All</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -278,7 +289,7 @@ export default function UsersPage() {
         </Card>
       </div>
 
-      {/* Users Grid */}
+      {/* Users List */}
       {loading ? (
         <Card>
           <CardContent className="flex items-center justify-center py-12">
@@ -290,52 +301,83 @@ export default function UsersPage() {
         </Card>
       ) : users.length > 0 ? (
         <>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {users.map((user) => {
-              const risk = getRiskLevel(user.risk_score)
-              return (
-                <Card key={user.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="flex items-center gap-2">
-                          <User className="h-5 w-5" />
-                          {user.name}
-                        </CardTitle>
-                        <p className="text-sm text-muted-foreground">{user.id}</p>
-                      </div>
-                      <Badge variant={risk.color as any}>
-                        {risk.level} Risk
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      <span>{user.email}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span>{user.location}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span>Age: {user.age}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Shield className="h-4 w-4 text-muted-foreground" />
-                      <span>Risk Score: {user.risk_score.toFixed(1)}</span>
-                    </div>
-                    <div className="pt-2">
-                      <Button variant="outline" size="sm" className="w-full" onClick={() => handleViewDetails(user)}>
-                        View Details
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Users List</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-3 font-medium cursor-pointer hover:bg-muted/50" onClick={() => handleSort('name')}>
+                        Name {getSortIcon('name')}
+                      </th>
+                      <th className="text-left p-3 font-medium">ID</th>
+                      <th className="text-left p-3 font-medium">Email</th>
+                      <th className="text-left p-3 font-medium">Location</th>
+                      <th className="text-left p-3 font-medium">Age</th>
+                      <th className="text-left p-3 font-medium cursor-pointer hover:bg-muted/50" onClick={() => handleSort('risk_score')}>
+                        Risk Score {getSortIcon('risk_score')}
+                      </th>
+                      <th className="text-left p-3 font-medium cursor-pointer hover:bg-muted/50" onClick={() => handleSort('signup_date')}>
+                        Signup Date {getSortIcon('signup_date')}
+                      </th>
+                      <th className="text-left p-3 font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((user) => {
+                      const risk = getRiskLevel(user.risk_score)
+                      return (
+                        <tr key={user.id} className="border-b hover:bg-muted/30">
+                          <td className="p-3">
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4 text-muted-foreground" />
+                              <span className="font-medium">{user.name}</span>
+                            </div>
+                          </td>
+                          <td className="p-3 text-sm text-muted-foreground">{user.id}</td>
+                          <td className="p-3">
+                            <div className="flex items-center gap-2">
+                              <Mail className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm">{user.email}</span>
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <div className="flex items-center gap-2">
+                              <MapPin className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm">{user.location}</span>
+                            </div>
+                          </td>
+                          <td className="p-3 text-sm">{user.age}</td>
+                          <td className="p-3">
+                            <Badge variant={risk.color as any} className="text-xs">
+                              {risk.level} ({user.risk_score.toFixed(1)})
+                            </Badge>
+                          </td>
+                          <td className="p-3 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4" />
+                              {formatDate(user.signup_date)}
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <Link href={`/users/${user.id}`}>
+                              <Button variant="outline" size="sm" className="flex items-center gap-2">
+                                <Eye className="h-4 w-4" />
+                                View Details
+                              </Button>
+                            </Link>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Pagination */}
           {totalPages > 1 && (
@@ -407,143 +449,6 @@ export default function UsersPage() {
             </div>
           </CardContent>
         </Card>
-      )}
-
-      {/* User Details Modal */}
-      {showModal && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-4xl max-h-[90vh] flex flex-col bg-background border-2 shadow-2xl">
-            <CardHeader className="flex justify-between items-center border-b bg-muted/50">
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-6 w-6" />
-                {selectedUser.name}
-              </CardTitle>
-              <Button variant="ghost" onClick={closeModal} className="h-8 w-8 p-0 hover:bg-destructive hover:text-destructive-foreground">
-                <X className="h-4 w-4" />
-              </Button>
-            </CardHeader>
-            <CardContent className="flex-1 overflow-y-auto p-6 bg-background">
-              {loadingDetails ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                  <span className="ml-2">Loading user details...</span>
-                </div>
-              ) : userDetails ? (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="bg-card p-4 rounded-lg border">
-                      <p className="text-sm font-medium text-muted-foreground mb-1">ID</p>
-                      <p className="text-lg font-bold text-foreground">{userDetails.user.id}</p>
-                    </div>
-                    <div className="bg-card p-4 rounded-lg border">
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Risk Level</p>
-                      <Badge variant={getRiskLevel(userDetails.user.risk_score).color as any} className="text-sm">
-                        {userDetails.fraud_risk_level} Risk
-                      </Badge>
-                    </div>
-                    <div className="bg-card p-4 rounded-lg border">
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Age</p>
-                      <p className="text-lg font-bold text-foreground">{userDetails.user.age}</p>
-                    </div>
-                    <div className="bg-card p-4 rounded-lg border">
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Location</p>
-                      <p className="text-lg font-bold text-foreground">{userDetails.user.location}</p>
-                    </div>
-                    <div className="bg-card p-4 rounded-lg border">
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Email</p>
-                      <p className="text-lg font-bold text-foreground">{userDetails.user.email}</p>
-                    </div>
-                    <div className="bg-card p-4 rounded-lg border">
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Signup Date</p>
-                      <p className="text-lg font-bold text-foreground">{formatDate(userDetails.user.signup_date)}</p>
-                    </div>
-                  </div>
-
-                  <div className="border-t pt-6">
-                    <h3 className="text-xl font-bold mb-4 text-foreground">Accounts</h3>
-                    <div className="grid gap-3">
-                      {userDetails.accounts.map((account) => (
-                        <Card key={account.id} className="p-4 bg-card border">
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <p className="text-lg font-bold text-foreground">{account.account_type.charAt(0).toUpperCase() + account.account_type.slice(1)} Account</p>
-                              <p className="text-sm text-muted-foreground">Balance: ${account.balance.toFixed(2)}</p>
-                            </div>
-                            <Badge variant="secondary" className="text-xs">{formatDate(account.created_date)}</Badge>
-                          </div>
-                        </Card>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="border-t pt-6">
-                    <h3 className="text-xl font-bold mb-4 text-foreground">Recent Transactions</h3>
-                    <div className="grid gap-3">
-                      {userDetails.recent_transactions.map((tx) => (
-                        <Card key={tx.id} className="p-4 bg-card border">
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <p className="text-lg font-bold text-foreground">Transaction {tx.id.substring(0, 5)}...</p>
-                              <p className="text-sm text-muted-foreground">Amount: ${tx.amount.toFixed(2)} {tx.currency}</p>
-                              <p className="text-sm text-muted-foreground">Status: {tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}</p>
-                            </div>
-                            <Badge variant="secondary" className="text-xs">{formatDate(tx.timestamp)}</Badge>
-                          </div>
-                        </Card>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="border-t pt-6">
-                    <h3 className="text-xl font-bold mb-4 text-foreground">Summary</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-card p-4 rounded-lg border">
-                        <p className="text-sm font-medium text-muted-foreground mb-1">Total Transactions</p>
-                        <p className="text-lg font-bold text-foreground">{userDetails.total_transactions}</p>
-                      </div>
-                      <div className="bg-card p-4 rounded-lg border">
-                        <p className="text-sm font-medium text-muted-foreground mb-1">Total Amount Sent</p>
-                        <p className="text-lg font-bold text-foreground">${userDetails.total_amount_sent.toFixed(2)}</p>
-                      </div>
-                      <div className="bg-card p-4 rounded-lg border">
-                        <p className="text-sm font-medium text-muted-foreground mb-1">Total Amount Received</p>
-                        <p className="text-lg font-bold text-foreground">${userDetails.total_amount_received.toFixed(2)}</p>
-                      </div>
-                      <div className="bg-card p-4 rounded-lg border">
-                        <p className="text-sm font-medium text-muted-foreground mb-1">Fraud Risk Level</p>
-                        <p className="text-lg font-bold text-foreground">{userDetails.fraud_risk_level}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="border-t pt-6">
-                    <h3 className="text-xl font-bold mb-4 text-foreground">Connected Users</h3>
-                    <div className="grid gap-3">
-                      {userDetails.connected_users.length > 0 ? (
-                        userDetails.connected_users.map((id) => (
-                          <Badge key={id} variant="secondary" className="text-sm">
-                            User {id.substring(0, 5)}...
-                          </Badge>
-                        ))
-                      ) : (
-                        <p className="text-muted-foreground">No connected users found.</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center py-12 text-center">
-                  <p className="text-muted-foreground">No user details available.</p>
-                </div>
-              )}
-            </CardContent>
-            <CardFooter className="flex justify-end gap-2 border-t bg-muted/50 p-4">
-              <Button variant="outline" onClick={closeModal} className="px-6">
-                Close
-              </Button>
-            </CardFooter>
-          </Card>
-        </div>
       )}
     </div>
   )

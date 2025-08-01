@@ -8,21 +8,35 @@ interface SwitchProps {
   className?: string
 }
 
-const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
+const Switch = React.forwardRef<HTMLDivElement, SwitchProps>(
   ({ checked = false, onCheckedChange, disabled = false, className, ...props }, ref) => {
     return (
-      <button
+      <div
         ref={ref}
-        type="button"
         role="switch"
         aria-checked={checked}
-        disabled={disabled}
+        aria-disabled={disabled}
         className={cn(
           "peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=unchecked]:bg-input",
           className
         )}
         data-state={checked ? "checked" : "unchecked"}
-        onClick={() => onCheckedChange?.(!checked)}
+        onClick={(e) => {
+          e.stopPropagation()
+          if (!disabled) {
+            onCheckedChange?.(!checked)
+          }
+        }}
+        onKeyDown={(e) => {
+          if (e.key === ' ' || e.key === 'Enter') {
+            e.preventDefault()
+            e.stopPropagation()
+            if (!disabled) {
+              onCheckedChange?.(!checked)
+            }
+          }
+        }}
+        tabIndex={disabled ? -1 : 0}
         {...props}
       >
         <span
@@ -31,7 +45,7 @@ const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
           )}
           data-state={checked ? "checked" : "unchecked"}
         />
-      </button>
+      </div>
     )
   }
 )

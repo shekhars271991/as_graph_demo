@@ -34,12 +34,19 @@ import {
 
 interface Transaction {
   id: string
-  sender_id: string
-  receiver_id: string
+  user_id: string
+  account_id: string
   amount: number
+  currency: string
+  transaction_type: string
+  merchant: string
+  location: string
   timestamp: string
   status: string
   fraud_score: number
+  fraud_type?: string
+  fraud_scenario?: string
+  is_fraud?: boolean
 }
 
 interface GenerationStats {
@@ -207,42 +214,12 @@ export default function AdminPage() {
   const [selectedScenario, setSelectedScenario] = useState<FraudScenario | null>(null)
   const [showScenarioDialog, setShowScenarioDialog] = useState(false)
   const [expandedScenarios, setExpandedScenarios] = useState<Set<string>>(new Set())
+  const [isClient, setIsClient] = useState(false)
 
-  // Simulate real-time transaction generation
+  // Ensure component only renders on client side
   useEffect(() => {
-    let interval: NodeJS.Timeout
-    let startTime: Date
-
-    if (isGenerating) {
-      startTime = new Date()
-      setStats(prev => ({ ...prev, isRunning: true, startTime: startTime.toISOString() }))
-
-      interval = setInterval(() => {
-        const newTransactions = Array.from({ length: generationRate }, (_, i) => ({
-          id: `T${Date.now()}_${i}`,
-          sender_id: `A${Math.floor(Math.random() * 100)}`,
-          receiver_id: `A${Math.floor(Math.random() * 100)}`,
-          amount: Math.random() * 1000 + 10,
-          timestamp: new Date().toISOString(),
-          status: 'completed',
-          fraud_score: Math.random() * 100
-        }))
-
-        setRecentTransactions(prev => [...newTransactions, ...prev].slice(0, 50))
-        setStats(prev => ({
-          ...prev,
-          totalGenerated: prev.totalGenerated + generationRate,
-          currentRate: generationRate
-        }))
-      }, 1000)
-    }
-
-    return () => {
-      if (interval) {
-        clearInterval(interval)
-      }
-    }
-  }, [isGenerating, generationRate])
+    setIsClient(true)
+  }, [])
 
   // Update duration timer
   useEffect(() => {
@@ -269,34 +246,132 @@ export default function AdminPage() {
     }
   }, [stats.isRunning, stats.startTime])
 
-  const handleStartGeneration = async () => {
-    setIsLoading(true)
-    setError(null)
+  // Real-time status polling
+  useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') return
     
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      setIsGenerating(true)
-    } catch (err) {
-      setError('Failed to start transaction generation')
-    } finally {
-      setIsLoading(false)
+    let interval: NodeJS.Timeout
+
+    if (isGenerating) {
+      // Poll for status updates every 2 seconds
+      interval = setInterval(async () => {
+        try {
+          const response = await fetch('http://localhost:4000/transaction-generation/status')
+          if (response.ok) {
+            const statusData = await response.json()
+            
+            setStats(prev => ({
+              ...prev,
+              totalGenerated: statusData.total_generated,
+              currentRate: statusData.generation_rate
+            }))
+            
+            // Update recent transactions
+            if (statusData.last_10_transactions) {
+              setRecentTransactions(statusData.last_10_transactions)
+            }
+          }
+        } catch (err) {
+          console.error('Error polling status:', err)
+        }
+      }, 2000)
     }
-  }
+
+    return () => {
+      if (interval) {
+        clearInterval(interval)
+      }
+    }
+  }, [isGenerating])
+
+  // Initial status check on component mount
+  useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') return
+    
+    const checkInitialStatus = async () => {
+      try {
+        const response = await fetch('http://localhost:4000/transaction-generation/status')
+        if (response.ok) {
+          const statusData = await response.json()
+          
+          if (statusData.status === 'running') {
+            setIsGenerating(true)
+            setStats(prev => ({
+              ...prev,
+              isRunning: true,
+              totalGenerated: statusData.total_generated,
+              currentRate: statusData.generation_rate,
+              startTime: new Date().toISOString() // Approximate start time
+            }))
+          }
+          
+          if (statusData.last_10_transactions) {
+            setRecentTransactions(statusData.last_10_transactions)
+          }
+        }
+      } catch (err) {
+        console.error('Error checking initial status:', err)
+      }
+    }
+    
+    checkInitialStatus()
+  }, [])
+
+  const handleStartGeneration = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`http://localhost:4000/transaction-generation/start?rate=${generationRate}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setIsGenerating(true); // Keep this state for UI consistency
+        setStats(prev => ({ ...prev, isRunning: true, startTime: new Date().toISOString() }));
+        console.log('Transaction generation started successfully!');
+      } else {
+        const errorData = await response.json();
+        console.error(errorData.detail || 'Failed to start generation');
+      }
+    } catch (error) {
+      console.error('Error starting generation:', error);
+      console.error('Failed to start generation');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleStopGeneration = async () => {
-    setIsLoading(true)
-    setError(null)
-    
     try {
-      await new Promise(resolve => setTimeout(resolve, 500))
-      setIsGenerating(false)
-      setStats(prev => ({ ...prev, isRunning: false }))
-    } catch (err) {
-      setError('Failed to stop transaction generation')
+      setIsLoading(true);
+      const response = await fetch('http://localhost:4000/transaction-generation/stop', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setIsGenerating(false); // Keep this state for UI consistency
+        setStats(prev => ({ ...prev, isRunning: false }));
+        console.log('Transaction generation stopped successfully!');
+      } else {
+        const errorData = await response.json();
+        console.error(errorData.detail || 'Failed to stop generation');
+      }
+    } catch (error) {
+      console.error('Error stopping generation:', error);
+      console.error('Failed to stop generation');
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleClearTransactions = async () => {
     if (!showClearConfirmation) {
@@ -308,7 +383,8 @@ export default function AdminPage() {
     setError(null)
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // For now, we'll just clear the local state since the backend doesn't have a clear endpoint
+      // In a real implementation, you would call a backend API to clear transactions
       setRecentTransactions([])
       setStats(prev => ({ ...prev, totalGenerated: 0 }))
       setShowClearConfirmation(false)
@@ -373,6 +449,11 @@ export default function AdminPage() {
   const phase1Scenarios = scenarios.filter(s => s.priority === 'Phase 1')
   const phase2Scenarios = scenarios.filter(s => s.priority === 'Phase 2')
   const phase3Scenarios = scenarios.filter(s => s.priority === 'Phase 3')
+
+  // Don't render until client-side
+  if (!isClient) {
+    return <div className="space-y-6">Loading...</div>
+  }
 
   return (
     <div className="space-y-6">
@@ -610,10 +691,12 @@ export default function AdminPage() {
                   >
                     <div className="flex items-center justify-between w-full">
                       <div className="flex items-center space-x-3">
-                        <Switch
-                          checked={scenario.enabled}
-                          onCheckedChange={() => toggleScenario(scenario.id)}
-                        />
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <Switch
+                            checked={scenario.enabled}
+                            onCheckedChange={() => toggleScenario(scenario.id)}
+                          />
+                        </div>
                         <div className="text-left">
                           <div className="font-medium">{scenario.name}</div>
                           <div className="text-sm text-muted-foreground">{scenario.description}</div>
@@ -623,16 +706,25 @@ export default function AdminPage() {
                         <Badge className={getRiskLevelColor(scenario.riskLevel)}>
                           {scenario.riskLevel}
                         </Badge>
-                        <Button
-                          variant="ghost"
-                          size="sm"
+                        <div
+                          className="inline-flex items-center justify-center h-9 rounded-md px-3 text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground cursor-pointer"
                           onClick={(e) => {
                             e.stopPropagation()
                             showScenarioDetails(scenario)
                           }}
+                          onKeyDown={(e) => {
+                            if (e.key === ' ' || e.key === 'Enter') {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              showScenarioDetails(scenario)
+                            }
+                          }}
+                          tabIndex={0}
+                          role="button"
+                          aria-label="View scenario details"
                         >
                           <Eye className="w-4 h-4" />
-                        </Button>
+                        </div>
                       </div>
                     </div>
                   </CollapsibleTrigger>
@@ -672,10 +764,12 @@ export default function AdminPage() {
                   >
                     <div className="flex items-center justify-between w-full">
                       <div className="flex items-center space-x-3">
-                        <Switch
-                          checked={scenario.enabled}
-                          onCheckedChange={() => toggleScenario(scenario.id)}
-                        />
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <Switch
+                            checked={scenario.enabled}
+                            onCheckedChange={() => toggleScenario(scenario.id)}
+                          />
+                        </div>
                         <div className="text-left">
                           <div className="font-medium">{scenario.name}</div>
                           <div className="text-sm text-muted-foreground">{scenario.description}</div>
@@ -685,16 +779,25 @@ export default function AdminPage() {
                         <Badge className={getRiskLevelColor(scenario.riskLevel)}>
                           {scenario.riskLevel}
                         </Badge>
-                        <Button
-                          variant="ghost"
-                          size="sm"
+                        <div
+                          className="inline-flex items-center justify-center h-9 rounded-md px-3 text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground cursor-pointer"
                           onClick={(e) => {
                             e.stopPropagation()
                             showScenarioDetails(scenario)
                           }}
+                          onKeyDown={(e) => {
+                            if (e.key === ' ' || e.key === 'Enter') {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              showScenarioDetails(scenario)
+                            }
+                          }}
+                          tabIndex={0}
+                          role="button"
+                          aria-label="View scenario details"
                         >
                           <Eye className="w-4 h-4" />
-                        </Button>
+                        </div>
                       </div>
                     </div>
                   </CollapsibleTrigger>
@@ -734,10 +837,12 @@ export default function AdminPage() {
                   >
                     <div className="flex items-center justify-between w-full">
                       <div className="flex items-center space-x-3">
-                        <Switch
-                          checked={scenario.enabled}
-                          onCheckedChange={() => toggleScenario(scenario.id)}
-                        />
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <Switch
+                            checked={scenario.enabled}
+                            onCheckedChange={() => toggleScenario(scenario.id)}
+                          />
+                        </div>
                         <div className="text-left">
                           <div className="font-medium">{scenario.name}</div>
                           <div className="text-sm text-muted-foreground">{scenario.description}</div>
@@ -747,16 +852,25 @@ export default function AdminPage() {
                         <Badge className={getRiskLevelColor(scenario.riskLevel)}>
                           {scenario.riskLevel}
                         </Badge>
-                        <Button
-                          variant="ghost"
-                          size="sm"
+                        <div
+                          className="inline-flex items-center justify-center h-9 rounded-md px-3 text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground cursor-pointer"
                           onClick={(e) => {
                             e.stopPropagation()
                             showScenarioDetails(scenario)
                           }}
+                          onKeyDown={(e) => {
+                            if (e.key === ' ' || e.key === 'Enter') {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              showScenarioDetails(scenario)
+                            }
+                          }}
+                          tabIndex={0}
+                          role="button"
+                          aria-label="View scenario details"
                         >
                           <Eye className="w-4 h-4" />
-                        </Button>
+                        </div>
                       </div>
                     </div>
                   </CollapsibleTrigger>
@@ -831,13 +945,20 @@ export default function AdminPage() {
                         </span>
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {transaction.sender_id} → {transaction.receiver_id}
+                        {transaction.merchant} • {transaction.location}
                       </div>
                     </div>
                     
                     <Badge className={getFraudScoreColor(transaction.fraud_score)}>
                       {transaction.fraud_score.toFixed(1)}
                     </Badge>
+                    
+                    {transaction.is_fraud && (
+                      <Badge variant="destructive">
+                        <AlertTriangle className="w-3 h-3 mr-1" />
+                        FRAUD
+                      </Badge>
+                    )}
                     
                     <Badge variant={transaction.status === 'completed' ? 'default' : 'secondary'}>
                       {transaction.status === 'completed' ? (

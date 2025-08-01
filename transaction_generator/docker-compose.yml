@@ -1,0 +1,25 @@
+services:
+  transaction-generator:
+    build: .
+    container_name: transaction-generator
+    ports:
+      - "4002:4002"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=INFO
+    volumes:
+      - ./logs:/app/logs
+      - ../data:/app/data:ro  # Mount users.json data
+    networks:
+      - asgraph_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  asgraph_net:
+    external: true 

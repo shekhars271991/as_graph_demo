@@ -6,6 +6,10 @@ import uuid
 import logging
 import json
 import os
+import sys
+
+# Add the parent directory to the path so we can import from models
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from gremlin_python.driver.driver_remote_connection import DriverRemoteConnection
 from gremlin_python.process.anonymous_traversal import traversal
@@ -168,7 +172,7 @@ class GraphService:
                             
                             # Link user to account
                             def create_ownership():
-                                return self.client.add_e("HAS_ACCOUNT").from_(user_vertex).to(account_vertex).property("since", "2024").iterate()
+                                return self.client.add_e("owns").from_(user_vertex).to(account_vertex).property("since", "2024").iterate()
                             
                             await loop.run_in_executor(None, create_ownership)
                         except Exception as e:
@@ -251,7 +255,7 @@ class GraphService:
                 
                 # Get user's accounts
                 def get_account_vertices():
-                    return self.client.V(user_vertex).out("HAS_ACCOUNT").to_list()
+                    return self.client.V(user_vertex).out("owns").to_list()
                 
                 account_vertices = await loop.run_in_executor(None, get_account_vertices)
                 accounts = []
@@ -437,48 +441,15 @@ class GraphService:
                 
                 users_data = []
                 for user_vertex in paginated_users:
-                    # Get user properties using the correct Gremlin syntax
-                    user_props = {}
-                    try:
-                        # Get all properties of the vertex
-                        props = self.client.V(user_vertex).value_map().next()
-                        for key, value in props.items():
-                            if isinstance(value, list) and len(value) > 0:
-                                user_props[key] = value[0]
-                            else:
-                                user_props[key] = value
-                    except Exception as e:
-                        logger.error(f"Error getting user properties: {e}")
-                        continue
-                    
-                    # Get user's accounts
-                    accounts = []
-                    try:
-                        account_vertices = self.client.V(user_vertex).out("OWNS").to_list()
-                        for acc_vertex in account_vertices:
-                            acc_props = {}
-                            try:
-                                acc_prop_map = self.client.V(acc_vertex).value_map().next()
-                                for key, value in acc_prop_map.items():
-                                    if isinstance(value, list) and len(value) > 0:
-                                        acc_props[key] = value[0]
-                                    else:
-                                        acc_props[key] = value
-                                accounts.append(acc_props)
-                            except Exception as e:
-                                logger.error(f"Error getting account properties: {e}")
-                    except Exception as e:
-                        logger.error(f"Error getting user accounts: {e}")
-                    
+                    user_props = user_vertex.value_map().next()
                     users_data.append({
-                        'id': user_props.get('userId', ''),
-                        'name': user_props.get('name', ''),
-                        'email': user_props.get('email', ''),
-                        'age': user_props.get('age', 0),
-                        'location': user_props.get('location', ''),
-                        'risk_score': user_props.get('riskScore', 0.0),
-                        'signup_date': user_props.get('signupDate', ''),
-                        'accounts': accounts
+                        'id': user_props.get('userId', [''])[0],
+                        'name': user_props.get('name', [''])[0],
+                        'email': user_props.get('email', [''])[0],
+                        'age': user_props.get('age', [0])[0],
+                        'location': user_props.get('location', [''])[0],
+                        'risk_score': user_props.get('risk_score', [0.0])[0],
+                        'signup_date': user_props.get('signup_date', [''])[0]
                     })
                 
                 return {
@@ -812,236 +783,4 @@ class GraphService:
                 'page': page,
                 'page_size': page_size,
                 'total_pages': 0
-            }
-
-    async def get_user_transactions_paginated(self, user_id: str, page: int, page_size: int) -> Dict[str, Any]:
-        """Get paginated transactions for a specific user"""
-        try:
-            # For now, return mock data
-            all_transactions = []
-            
-            # Generate mock transactions for the specific user
-            for i in range(30):
-                transaction = {
-                    "id": f"TXN{user_id}{i+1:03d}",
-                    "amount": round(random.uniform(10, 5000), 2),
-                    "currency": "USD",
-                    "timestamp": (datetime.now() - timedelta(days=random.randint(0, 30))).isoformat(),
-                    "status": random.choice(["completed", "pending", "failed"]),
-                    "fraud_score": round(random.uniform(0, 100), 1),
-                    "transaction_type": random.choice(["transfer", "payment", "withdrawal", "deposit"]),
-                    "merchant": random.choice(["Amazon", "Starbucks", "Uber", "Target", "Walmart"]),
-                    "location": random.choice(["New York, NY", "Los Angeles, CA", "Chicago, IL", "Houston, TX", "Phoenix, AZ"]),
-                    "is_fraud": random.random() < 0.1,
-                    "fraud_type": random.choice([None, "money_laundering", "identity_theft", "card_fraud"]),
-                    "user_id": user_id
-                }
-                all_transactions.append(transaction)
-            
-            # Apply pagination
-            start_idx = (page - 1) * page_size
-            end_idx = start_idx + page_size
-            paginated_transactions = all_transactions[start_idx:end_idx]
-            
-            total = len(all_transactions)
-            total_pages = (total + page_size - 1) // page_size
-            
-            return {
-                "transactions": paginated_transactions,
-                "total": total,
-                "page": page,
-                "page_size": page_size,
-                "total_pages": total_pages,
-                "user_id": user_id
-            }
-        except Exception as e:
-            logger.error(f"Error in get_user_transactions_paginated: {e}")
-            return {
-                "transactions": [],
-                "total": 0,
-                "page": page,
-                "page_size": page_size,
-                "total_pages": 0,
-                "user_id": user_id
-            }
-
-    async def get_user_accounts(self, user_id: str) -> List[Dict[str, Any]]:
-        """Get all accounts for a specific user"""
-        try:
-            # For now, return mock data
-            accounts = []
-            
-            # Generate 1-3 accounts per user
-            num_accounts = random.randint(1, 3)
-            account_types = ["checking", "savings", "credit"]
-            
-            for i in range(num_accounts):
-                account_type = account_types[i] if i < len(account_types) else "checking"
-                account = {
-                    "id": f"ACC{user_id}{i+1:02d}",
-                    "account_type": account_type,
-                    "balance": round(random.uniform(-5000, 50000), 2),
-                    "created_date": (datetime.now() - timedelta(days=random.randint(0, 365))).isoformat(),
-                    "user_id": user_id
-                }
-                accounts.append(account)
-            
-            return accounts
-        except Exception as e:
-            logger.error(f"Error in get_user_accounts: {e}")
-            return []
-
-    async def delete_all_data(self) -> Dict[str, Any]:
-        """Delete all data from the graph database"""
-        try:
-            if self.client:
-                # Delete all vertices and edges using thread pool
-                logger.info("Deleting all vertices and edges from graph database...")
-                
-                import asyncio
-                loop = asyncio.get_event_loop()
-                
-                # Delete all edges first
-                def delete_edges():
-                    return self.client.E().drop().to_list()
-                
-                edges_deleted = await loop.run_in_executor(None, delete_edges)
-                logger.info(f"Deleted {len(edges_deleted)} edges")
-                
-                # Delete all vertices
-                def delete_vertices():
-                    return self.client.V().drop().to_list()
-                
-                vertices_deleted = await loop.run_in_executor(None, delete_vertices)
-                logger.info(f"Deleted {len(vertices_deleted)} vertices")
-                
-                return {
-                    "message": "All data deleted successfully",
-                    "edges_deleted": len(edges_deleted),
-                    "vertices_deleted": len(vertices_deleted)
-                }
-            else:
-                # Mock mode - clear in-memory data
-                logger.info("Mock mode: Clearing in-memory data")
-                self.users_data = []
-                return {
-                    "message": "Mock data cleared successfully",
-                    "edges_deleted": 0,
-                    "vertices_deleted": 0
-                }
-        except Exception as e:
-            logger.error(f"Error deleting all data: {e}")
-            return {"error": str(e)}
-
-    async def load_users_only(self) -> Dict[str, Any]:
-        """Load only user and account data (no transactions) from users.json"""
-        try:
-            # Load users data from JSON file
-            possible_paths = [
-                os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'users.json'),
-                os.path.join(os.path.dirname(__file__), '..', 'data', 'users.json'),
-                'data/users.json',
-                '../data/users.json',
-                '../../data/users.json'
-            ]
-            
-            users_file_path = None
-            for path in possible_paths:
-                if os.path.exists(path):
-                    users_file_path = path
-                    break
-            
-            if not users_file_path:
-                return {"error": "users.json file not found"}
-            
-            logger.info(f"Loading users from: {users_file_path}")
-            
-            with open(users_file_path, 'r') as f:
-                data = json.load(f)
-            
-            users = data.get('users', [])
-            total_users = len(users)
-            total_accounts = 0
-            
-            if self.client:
-                # Real graph mode - use thread pool to avoid event loop conflicts
-                logger.info("Loading users and accounts into graph database...")
-                
-                import asyncio
-                loop = asyncio.get_event_loop()
-                
-                # Run all Gremlin operations in a thread pool
-                for user_data in users:
-                    try:
-                        # Create user vertex
-                        def create_user():
-                            return self.client.addV("User").property(
-                                "userId", user_data['id']
-                            ).property(
-                                "name", user_data['name']
-                            ).property(
-                                "email", user_data['email']
-                            ).property(
-                                "age", user_data['age']
-                            ).property(
-                                "location", user_data['location']
-                            ).property(
-                                "signupDate", user_data['signup_date']
-                            ).property(
-                                "riskScore", user_data.get('risk_score', 0.0)
-                            ).property(
-                                "isFlagged", user_data.get('is_flagged', False)
-                            ).next()
-                        
-                        user_vertex = await loop.run_in_executor(None, create_user)
-                        
-                        # Create accounts for this user
-                        for account_data in user_data.get('accounts', []):
-                            def create_account():
-                                return self.client.addV("Account").property(
-                                    "accountId", account_data['id']
-                                ).property(
-                                    "accountType", account_data['type']
-                                ).property(
-                                    "balance", account_data['balance']
-                                ).property(
-                                    "createdDate", account_data['created_date']
-                                ).next()
-                            
-                            account_vertex = await loop.run_in_executor(None, create_account)
-                            
-                            # Create ownership edge
-                            def create_edge():
-                                return self.client.addE("OWNS").from_(user_vertex).to(account_vertex).next()
-                            
-                            await loop.run_in_executor(None, create_edge)
-                            total_accounts += 1
-                            
-                    except Exception as e:
-                        logger.error(f"Error creating user {user_data.get('id', 'unknown')}: {e}")
-                        continue
-                
-                logger.info(f"✅ Loaded {total_users} users and {total_accounts} accounts into graph database")
-                
-                return {
-                    "users": total_users,
-                    "accounts": total_accounts,
-                    "transactions": 0
-                }
-            else:
-                # Mock mode
-                logger.info("Mock mode: Loading users and accounts into memory")
-                self.users_data = users
-                total_accounts = sum(len(user.get('accounts', [])) for user in users)
-                
-                logger.info(f"✅ Loaded {total_users} users and {total_accounts} accounts into memory")
-                
-                return {
-                    "users": total_users,
-                    "accounts": total_accounts,
-                    "transactions": 0
-                }
-                
-        except Exception as e:
-            logger.error(f"Error loading users only: {e}")
-            return {"error": str(e)} 
+            } 
