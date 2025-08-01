@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Path
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from typing import List, Optional, Dict, Any
@@ -28,6 +28,17 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting Fraud Detection API")
     await graph_service.connect()
+    
+    # Automatically load users.json data on startup
+    logger.info("Loading users.json data into graph database...")
+    try:
+        result = await graph_service.seed_sample_data()
+        if "error" in result:
+            logger.error(f"Failed to load data: {result['error']}")
+        else:
+            logger.info(f"✅ Data loaded successfully: {result['users']} users, {result['accounts']} accounts, {result['transactions']} transactions")
+    except Exception as e:
+        logger.error(f"Error during data loading: {e}")
     
     yield
     
@@ -67,21 +78,20 @@ async def health_check():
     }
 
 @app.post("/seed-data")
-async def seed_data(
-    num_users: int = Query(50, description="Number of users to create"),
-    num_transactions: int = Query(200, description="Number of transactions to create")
-):
-    """Seed the graph with sample users, accounts, and transactions"""
+async def seed_data():
+    """Load data from users.json file into the graph"""
     try:
-        result = await graph_service.seed_sample_data(num_users, num_transactions)
+        result = await graph_service.seed_sample_data()
         return {
-            "message": "Data seeded successfully",
+            "message": "Data loaded successfully from users.json",
             "users_created": result["users"],
             "accounts_created": result["accounts"],
             "transactions_created": result["transactions"]
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to seed data: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to load data: {str(e)}")
+
+
 
 @app.get("/detect/fraudulent-transactions")
 async def detect_fraudulent_transactions():
@@ -131,25 +141,53 @@ async def get_dashboard_stats():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get dashboard stats: {str(e)}")
 
+@app.get("/users")
+async def get_users(
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(12, ge=1, le=100, description="Number of users per page")
+):
+    """Get paginated list of all users"""
+    try:
+        results = await graph_service.get_users_paginated(page, page_size)
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get users: {str(e)}")
+
 @app.get("/users/search")
 async def search_users(
-    query: str = Query(..., description="Search term for user name or ID")
+    query: str = Query(..., description="Search term for user name or ID"),
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(12, ge=1, le=100, description="Number of users per page")
 ):
-    """Search users by name or ID"""
+    """Search users by name or ID with pagination"""
     try:
-        users = await graph_service.search_users(query)
-        return {"users": users}
+        results = await graph_service.search_users_paginated(query, page, page_size)
+        return results
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to search users: {str(e)}")
 
+@app.get("/transactions")
+async def get_transactions(
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(12, ge=1, le=100, description="Number of transactions per page")
+):
+    """Get paginated list of all transactions"""
+    try:
+        results = await graph_service.get_transactions_paginated(page, page_size)
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get transactions: {str(e)}")
+
 @app.get("/transactions/search")
 async def search_transactions(
-    query: str = Query(..., description="Search term for transaction ID")
+    query: str = Query(..., description="Search term for transaction ID, sender, or receiver"),
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(12, ge=1, le=100, description="Number of transactions per page")
 ):
-    """Search transactions by ID"""
+    """Search transactions by ID, sender, or receiver with pagination"""
     try:
-        transactions = await graph_service.search_transactions(query)
-        return {"transactions": transactions}
+        results = await graph_service.search_transactions_paginated(query, page, page_size)
+        return results
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to search transactions: {str(e)}")
 

@@ -1,0 +1,917 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Progress } from '@/components/ui/progress'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { Switch } from '@/components/ui/switch'
+import { 
+  Play, 
+  Square, 
+  Trash2, 
+  Settings, 
+  Activity, 
+  Clock, 
+  DollarSign, 
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  RefreshCw,
+  Database,
+  Shield,
+  Info,
+  Eye,
+  Zap,
+  Target,
+  Globe,
+  MapPin,
+  TrendingUp
+} from 'lucide-react'
+
+interface Transaction {
+  id: string
+  sender_id: string
+  receiver_id: string
+  amount: number
+  timestamp: string
+  status: string
+  fraud_score: number
+}
+
+interface GenerationStats {
+  isRunning: boolean
+  totalGenerated: number
+  currentRate: number
+  startTime?: string
+  duration: string
+}
+
+interface FraudScenario {
+  id: string
+  name: string
+  description: string
+  riskLevel: 'High' | 'Medium-High' | 'Medium' | 'Low'
+  enabled: boolean
+  priority: 'Phase 1' | 'Phase 2' | 'Phase 3'
+  keyIndicators: string[]
+  commonUseCase: string
+  detailedDescription: string
+}
+
+const fraudScenarios: FraudScenario[] = [
+  {
+    id: 'A',
+    name: 'Multiple Small Credits → Large Debit',
+    description: 'Money laundering technique with structured deposits',
+    riskLevel: 'High',
+    enabled: true,
+    priority: 'Phase 1',
+    keyIndicators: [
+      'Multiple credits within 24 hours before debit',
+      'Total credits ≈ debit amount (90-100%)',
+      'At least 2 credit transactions'
+    ],
+    commonUseCase: 'Money laundering, structuring transactions',
+    detailedDescription: 'A sophisticated money laundering technique where an account receives multiple small credit transactions followed by a single large debit transaction. This pattern suggests structured deposits to avoid detection thresholds and reporting requirements.'
+  },
+  {
+    id: 'B',
+    name: 'Large Credit → Structured Equal Debits',
+    description: 'Organized money distribution pattern',
+    riskLevel: 'High',
+    enabled: true,
+    priority: 'Phase 1',
+    keyIndicators: [
+      'Large credit ($10,000-$50,000)',
+      'Exactly 4 equal debits within 4 hours',
+      'Each debit ≈ 1/4 of credit amount',
+      'All debits to same destination'
+    ],
+    commonUseCase: 'Money mule operations, organized fraud rings',
+    detailedDescription: 'A pattern where a large credit is immediately followed by exactly 4 equal-sized debit transactions, typically indicating money distribution to multiple accounts. This suggests organized distribution of funds through coordinated networks.'
+  },
+  {
+    id: 'C',
+    name: 'Multiple Large ATM Withdrawals',
+    description: 'Systematic cash extraction pattern',
+    riskLevel: 'Medium-High',
+    enabled: false,
+    priority: 'Phase 2',
+    keyIndicators: [
+      '3+ ATM withdrawal transactions',
+      'Each withdrawal $5,000-$10,000',
+      'Self-directed transactions'
+    ],
+    commonUseCase: 'Cash extraction for money laundering',
+    detailedDescription: 'A pattern of multiple large ATM withdrawals that could indicate cash extraction for illicit purposes. This suggests systematic cash extraction to avoid digital trails and reporting requirements.'
+  },
+  {
+    id: 'D',
+    name: 'High-Frequency Mule Account Transfers',
+    description: 'Rapid-fire money movement',
+    riskLevel: 'High',
+    enabled: true,
+    priority: 'Phase 1',
+    keyIndicators: [
+      '10+ transactions in short time',
+      'Amounts $500-$5,000 each',
+      'Mix of credits/debits within 1 hour',
+      'High velocity money movement'
+    ],
+    commonUseCase: 'Money mule networks, account takeover',
+    detailedDescription: 'Rapid-fire transactions between multiple accounts, indicating money mule activity or account takeover. This pattern shows high velocity of money movement and suggests coordinated account activity.'
+  },
+  {
+    id: 'E',
+    name: 'Salary-Like Deposits → Suspicious Transfers',
+    description: 'Account takeover mimicry',
+    riskLevel: 'Medium-High',
+    enabled: false,
+    priority: 'Phase 2',
+    keyIndicators: [
+      'Initial credit $5,000-$10,000',
+      '3+ outgoing transfers',
+      'Transfer amounts $5,000-$7,000'
+    ],
+    commonUseCase: 'Account takeover, identity theft',
+    detailedDescription: 'A pattern mimicking legitimate salary deposits but followed by suspicious outgoing transfers. This suggests account takeover or identity theft where fraudsters mimic normal salary patterns.'
+  },
+  {
+    id: 'F',
+    name: 'Dormant Account Sudden Activity',
+    description: 'Account compromise indicator',
+    riskLevel: 'High',
+    enabled: false,
+    priority: 'Phase 2',
+    keyIndicators: [
+      '30+ days dormancy',
+      'Sudden large credit $10,000-$50,000',
+      '4 equal debits following',
+      'Total debits ≈ credit amount'
+    ],
+    commonUseCase: 'Account takeover, dormant account exploitation',
+    detailedDescription: 'A previously inactive account suddenly receives a large deposit followed by structured withdrawals. This suggests account compromise or takeover of dormant accounts.'
+  },
+  {
+    id: 'G',
+    name: 'International High-Risk Transfers',
+    description: 'Cross-border money laundering',
+    riskLevel: 'High',
+    enabled: false,
+    priority: 'Phase 3',
+    keyIndicators: [
+      '5+ international transfers',
+      'Amounts $500-$5,000 each',
+      'High-risk jurisdictions',
+      'Dubai, Bahrain, Thailand'
+    ],
+    commonUseCase: 'International money laundering, terrorist financing',
+    detailedDescription: 'Multiple transfers to specific international locations known for financial crime or money laundering. This suggests international money laundering networks and cross-border fraud.'
+  },
+  {
+    id: 'H',
+    name: 'Region-Specific Fraud (Indian)',
+    description: 'Localized fraud patterns',
+    riskLevel: 'High',
+    enabled: false,
+    priority: 'Phase 3',
+    keyIndicators: [
+      '3+ large transfers $10,000-$50,000',
+      'High-risk locations',
+      'Jamtara, Bharatpur, Alwar',
+      'Region-specific patterns'
+    ],
+    commonUseCase: 'Regional fraud networks, location-based scams',
+    detailedDescription: 'Fraud patterns specific to the Indian financial landscape, targeting known fraud-prone regions. This includes location-based scams and regional fraud networks.'
+  }
+]
+
+export default function AdminPage() {
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [generationRate, setGenerationRate] = useState(5)
+  const [stats, setStats] = useState<GenerationStats>({
+    isRunning: false,
+    totalGenerated: 0,
+    currentRate: 0,
+    duration: '00:00:00'
+  })
+  const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [showClearConfirmation, setShowClearConfirmation] = useState(false)
+  const [scenarios, setScenarios] = useState<FraudScenario[]>(fraudScenarios)
+  const [selectedScenario, setSelectedScenario] = useState<FraudScenario | null>(null)
+  const [showScenarioDialog, setShowScenarioDialog] = useState(false)
+  const [expandedScenarios, setExpandedScenarios] = useState<Set<string>>(new Set())
+
+  // Simulate real-time transaction generation
+  useEffect(() => {
+    let interval: NodeJS.Timeout
+    let startTime: Date
+
+    if (isGenerating) {
+      startTime = new Date()
+      setStats(prev => ({ ...prev, isRunning: true, startTime: startTime.toISOString() }))
+
+      interval = setInterval(() => {
+        const newTransactions = Array.from({ length: generationRate }, (_, i) => ({
+          id: `T${Date.now()}_${i}`,
+          sender_id: `A${Math.floor(Math.random() * 100)}`,
+          receiver_id: `A${Math.floor(Math.random() * 100)}`,
+          amount: Math.random() * 1000 + 10,
+          timestamp: new Date().toISOString(),
+          status: 'completed',
+          fraud_score: Math.random() * 100
+        }))
+
+        setRecentTransactions(prev => [...newTransactions, ...prev].slice(0, 50))
+        setStats(prev => ({
+          ...prev,
+          totalGenerated: prev.totalGenerated + generationRate,
+          currentRate: generationRate
+        }))
+      }, 1000)
+    }
+
+    return () => {
+      if (interval) {
+        clearInterval(interval)
+      }
+    }
+  }, [isGenerating, generationRate])
+
+  // Update duration timer
+  useEffect(() => {
+    let timer: NodeJS.Timeout
+
+    if (stats.isRunning && stats.startTime) {
+      timer = setInterval(() => {
+        const start = new Date(stats.startTime!)
+        const now = new Date()
+        const diff = now.getTime() - start.getTime()
+        const hours = Math.floor(diff / (1000 * 60 * 60))
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000)
+        
+        setStats(prev => ({
+          ...prev,
+          duration: `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+        }))
+      }, 1000)
+    }
+
+    return () => {
+      if (timer) clearInterval(timer)
+    }
+  }, [stats.isRunning, stats.startTime])
+
+  const handleStartGeneration = async () => {
+    setIsLoading(true)
+    setError(null)
+    
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      setIsGenerating(true)
+    } catch (err) {
+      setError('Failed to start transaction generation')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleStopGeneration = async () => {
+    setIsLoading(true)
+    setError(null)
+    
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500))
+      setIsGenerating(false)
+      setStats(prev => ({ ...prev, isRunning: false }))
+    } catch (err) {
+      setError('Failed to stop transaction generation')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleClearTransactions = async () => {
+    if (!showClearConfirmation) {
+      setShowClearConfirmation(true)
+      return
+    }
+    
+    setIsLoading(true)
+    setError(null)
+    
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      setRecentTransactions([])
+      setStats(prev => ({ ...prev, totalGenerated: 0 }))
+      setShowClearConfirmation(false)
+    } catch (err) {
+      setError('Failed to clear transactions')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const toggleScenario = (scenarioId: string) => {
+    setScenarios(prev => prev.map(scenario => 
+      scenario.id === scenarioId 
+        ? { ...scenario, enabled: !scenario.enabled }
+        : scenario
+    ))
+  }
+
+  const toggleScenarioExpansion = (scenarioId: string) => {
+    setExpandedScenarios(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(scenarioId)) {
+        newSet.delete(scenarioId)
+      } else {
+        newSet.add(scenarioId)
+      }
+      return newSet
+    })
+  }
+
+  const showScenarioDetails = (scenario: FraudScenario) => {
+    setSelectedScenario(scenario)
+    setShowScenarioDialog(true)
+  }
+
+  const getFraudScoreColor = (score: number) => {
+    if (score >= 80) return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+    if (score >= 50) return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+    return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+  }
+
+  const getRiskLevelColor = (riskLevel: string) => {
+    switch (riskLevel) {
+      case 'High': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+      case 'Medium-High': return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
+      case 'Medium': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+      case 'Low': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+    }
+  }
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'Phase 1': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+      case 'Phase 2': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
+      case 'Phase 3': return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+    }
+  }
+
+  const enabledScenarios = scenarios.filter(s => s.enabled)
+  const phase1Scenarios = scenarios.filter(s => s.priority === 'Phase 1')
+  const phase2Scenarios = scenarios.filter(s => s.priority === 'Phase 2')
+  const phase3Scenarios = scenarios.filter(s => s.priority === 'Phase 3')
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Admin Panel</h1>
+          <p className="text-muted-foreground">
+            Manage transaction generation and fraud detection scenarios
+          </p>
+        </div>
+        <div className="flex items-center space-x-4">
+          {stats.isRunning && (
+            <div className="text-right">
+              <div className="text-sm text-muted-foreground">Live Transactions</div>
+              <div className="text-2xl font-bold text-green-600 animate-pulse">
+                {stats.totalGenerated.toLocaleString()}
+              </div>
+            </div>
+          )}
+          <Badge variant={stats.isRunning ? "default" : "secondary"}>
+            {stats.isRunning ? (
+              <>
+                <Activity className="w-3 h-3 mr-1 animate-pulse" />
+                Active
+              </>
+            ) : (
+              <>
+                <XCircle className="w-3 h-3 mr-1" />
+                Inactive
+              </>
+            )}
+          </Badge>
+        </div>
+      </div>
+
+      {/* Error Alert */}
+      {error && (
+        <Card className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950">
+          <CardContent className="pt-6">
+            <div className="flex items-center space-x-2">
+              <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400" />
+              <span className="text-red-800 dark:text-red-200">{error}</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {/* Generation Controls */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Settings className="w-5 h-5" />
+              <span>Generation Controls</span>
+            </CardTitle>
+            <CardDescription>
+              Start, stop, and configure transaction generation
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Generation Rate (transactions/sec)</label>
+              <Input
+                type="number"
+                min="1"
+                max="100"
+                value={generationRate}
+                onChange={(e) => setGenerationRate(parseInt(e.target.value) || 1)}
+                disabled={isGenerating}
+              />
+            </div>
+            
+            <div className="flex space-x-2">
+              <Button
+                onClick={handleStartGeneration}
+                disabled={isGenerating || isLoading}
+                className="flex-1"
+              >
+                {isLoading ? (
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Play className="w-4 h-4 mr-2" />
+                )}
+                Start
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleStopGeneration}
+                disabled={!isGenerating || isLoading}
+                className="flex-1"
+              >
+                {isLoading ? (
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Square className="w-4 h-4 mr-2" />
+                )}
+                Stop
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Statistics */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Activity className="w-5 h-5" />
+              <span>Statistics</span>
+            </CardTitle>
+            <CardDescription>
+              Real-time generation metrics
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-primary">
+                  {stats.totalGenerated.toLocaleString()}
+                </div>
+                <div className="text-xs text-muted-foreground">Total Generated</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">
+                  {stats.currentRate}/s
+                </div>
+                <div className="text-xs text-muted-foreground">Current Rate</div>
+              </div>
+            </div>
+            
+            {stats.isRunning && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Generation Progress</span>
+                  <span className="text-xs font-mono">
+                    {Math.round((stats.totalGenerated % 1000) / 10)}%
+                  </span>
+                </div>
+                <Progress value={stats.totalGenerated % 1000} max={1000} />
+              </div>
+            )}
+            
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Duration</span>
+                <span className="font-mono">{stats.duration}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Status</span>
+                <Badge variant={stats.isRunning ? "default" : "secondary"}>
+                  {stats.isRunning ? "Running" : "Stopped"}
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Quick Actions */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Database className="w-5 h-5" />
+              <span>Quick Actions</span>
+            </CardTitle>
+            <CardDescription>
+              Manage data and system operations
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button
+              variant={showClearConfirmation ? "destructive" : "outline"}
+              onClick={handleClearTransactions}
+              disabled={isLoading || recentTransactions.length === 0}
+              className="w-full"
+            >
+              {isLoading ? (
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4 mr-2" />
+              )}
+              {showClearConfirmation ? "Confirm Clear" : "Clear All Transactions"}
+            </Button>
+            
+            {showClearConfirmation && (
+              <Button
+                variant="outline"
+                onClick={() => setShowClearConfirmation(false)}
+                className="w-full"
+              >
+                Cancel
+              </Button>
+            )}
+            
+            <div className="text-xs text-muted-foreground">
+              {showClearConfirmation 
+                ? "This action cannot be undone. Click 'Confirm Clear' to proceed."
+                : "This will remove all generated transactions from the system."
+              }
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Fraud Detection Scenarios */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span className="flex items-center space-x-2">
+              <Shield className="w-5 h-5" />
+              <span>Fraud Detection Scenarios</span>
+            </span>
+            <div className="flex items-center space-x-2">
+              <Badge variant="secondary">
+                {enabledScenarios.length} of {scenarios.length} enabled
+              </Badge>
+            </div>
+          </CardTitle>
+          <CardDescription>
+            Configure which fraud detection patterns to monitor in real-time
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Phase 1 Scenarios */}
+          <div className="space-y-3">
+            <h3 className="text-lg font-semibold flex items-center space-x-2">
+              <Target className="w-4 h-4 text-blue-600" />
+              <span>Phase 1 - High Priority</span>
+            </h3>
+            {phase1Scenarios.map((scenario) => (
+              <Collapsible key={scenario.id}>
+                <div className="border rounded-lg">
+                  <CollapsibleTrigger
+                    onClick={() => toggleScenarioExpansion(scenario.id)}
+                    isOpen={expandedScenarios.has(scenario.id)}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center space-x-3">
+                        <Switch
+                          checked={scenario.enabled}
+                          onCheckedChange={() => toggleScenario(scenario.id)}
+                        />
+                        <div className="text-left">
+                          <div className="font-medium">{scenario.name}</div>
+                          <div className="text-sm text-muted-foreground">{scenario.description}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Badge className={getRiskLevelColor(scenario.riskLevel)}>
+                          {scenario.riskLevel}
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            showScenarioDetails(scenario)
+                          }}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent isOpen={expandedScenarios.has(scenario.id)}>
+                    <div className="space-y-3 text-sm">
+                      <div>
+                        <strong>Key Indicators:</strong>
+                        <ul className="list-disc list-inside mt-1 space-y-1">
+                          {scenario.keyIndicators.map((indicator, index) => (
+                            <li key={index} className="text-muted-foreground">{indicator}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div>
+                        <strong>Common Use Case:</strong>
+                        <p className="text-muted-foreground mt-1">{scenario.commonUseCase}</p>
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+            ))}
+          </div>
+
+          {/* Phase 2 Scenarios */}
+          <div className="space-y-3">
+            <h3 className="text-lg font-semibold flex items-center space-x-2">
+              <TrendingUp className="w-4 h-4 text-purple-600" />
+              <span>Phase 2 - Medium Priority</span>
+            </h3>
+            {phase2Scenarios.map((scenario) => (
+              <Collapsible key={scenario.id}>
+                <div className="border rounded-lg">
+                  <CollapsibleTrigger
+                    onClick={() => toggleScenarioExpansion(scenario.id)}
+                    isOpen={expandedScenarios.has(scenario.id)}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center space-x-3">
+                        <Switch
+                          checked={scenario.enabled}
+                          onCheckedChange={() => toggleScenario(scenario.id)}
+                        />
+                        <div className="text-left">
+                          <div className="font-medium">{scenario.name}</div>
+                          <div className="text-sm text-muted-foreground">{scenario.description}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Badge className={getRiskLevelColor(scenario.riskLevel)}>
+                          {scenario.riskLevel}
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            showScenarioDetails(scenario)
+                          }}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent isOpen={expandedScenarios.has(scenario.id)}>
+                    <div className="space-y-3 text-sm">
+                      <div>
+                        <strong>Key Indicators:</strong>
+                        <ul className="list-disc list-inside mt-1 space-y-1">
+                          {scenario.keyIndicators.map((indicator, index) => (
+                            <li key={index} className="text-muted-foreground">{indicator}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div>
+                        <strong>Common Use Case:</strong>
+                        <p className="text-muted-foreground mt-1">{scenario.commonUseCase}</p>
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+            ))}
+          </div>
+
+          {/* Phase 3 Scenarios */}
+          <div className="space-y-3">
+            <h3 className="text-lg font-semibold flex items-center space-x-2">
+              <Globe className="w-4 h-4 text-gray-600" />
+              <span>Phase 3 - Lower Priority</span>
+            </h3>
+            {phase3Scenarios.map((scenario) => (
+              <Collapsible key={scenario.id}>
+                <div className="border rounded-lg">
+                  <CollapsibleTrigger
+                    onClick={() => toggleScenarioExpansion(scenario.id)}
+                    isOpen={expandedScenarios.has(scenario.id)}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center space-x-3">
+                        <Switch
+                          checked={scenario.enabled}
+                          onCheckedChange={() => toggleScenario(scenario.id)}
+                        />
+                        <div className="text-left">
+                          <div className="font-medium">{scenario.name}</div>
+                          <div className="text-sm text-muted-foreground">{scenario.description}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Badge className={getRiskLevelColor(scenario.riskLevel)}>
+                          {scenario.riskLevel}
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            showScenarioDetails(scenario)
+                          }}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent isOpen={expandedScenarios.has(scenario.id)}>
+                    <div className="space-y-3 text-sm">
+                      <div>
+                        <strong>Key Indicators:</strong>
+                        <ul className="list-disc list-inside mt-1 space-y-1">
+                          {scenario.keyIndicators.map((indicator, index) => (
+                            <li key={index} className="text-muted-foreground">{indicator}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div>
+                        <strong>Common Use Case:</strong>
+                        <p className="text-muted-foreground mt-1">{scenario.commonUseCase}</p>
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Recent Transactions */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span className="flex items-center space-x-2">
+              <Clock className="w-5 h-5" />
+              <span>Recent Transactions</span>
+            </span>
+            <Badge variant="secondary">
+              {recentTransactions.length} transactions
+            </Badge>
+          </CardTitle>
+          <CardDescription>
+            Live feed of generated transactions
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {recentTransactions.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Database className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p>No transactions generated yet</p>
+              <p className="text-sm">Start generation to see transactions here</p>
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {recentTransactions.map((transaction) => (
+                <div
+                  key={transaction.id}
+                  className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="flex flex-col">
+                      <span className="font-mono text-sm">{transaction.id}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(transaction.timestamp).toLocaleTimeString()}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-4">
+                    <div className="text-right">
+                      <div className="flex items-center space-x-1">
+                        <DollarSign className="w-3 h-3" />
+                        <span className="font-medium">
+                          ${transaction.amount.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {transaction.sender_id} → {transaction.receiver_id}
+                      </div>
+                    </div>
+                    
+                    <Badge className={getFraudScoreColor(transaction.fraud_score)}>
+                      {transaction.fraud_score.toFixed(1)}
+                    </Badge>
+                    
+                    <Badge variant={transaction.status === 'completed' ? 'default' : 'secondary'}>
+                      {transaction.status === 'completed' ? (
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                      ) : (
+                        <XCircle className="w-3 h-3 mr-1" />
+                      )}
+                      {transaction.status}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Scenario Details Dialog */}
+      <Dialog open={showScenarioDialog} onOpenChange={setShowScenarioDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <Shield className="w-5 h-5" />
+              <span>{selectedScenario?.name}</span>
+            </DialogTitle>
+            <DialogDescription>
+              Detailed information about this fraud detection scenario
+            </DialogDescription>
+          </DialogHeader>
+          {selectedScenario && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Risk Level</label>
+                  <Badge className={getRiskLevelColor(selectedScenario.riskLevel)}>
+                    {selectedScenario.riskLevel}
+                  </Badge>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Priority</label>
+                  <Badge className={getPriorityColor(selectedScenario.priority)}>
+                    {selectedScenario.priority}
+                  </Badge>
+                </div>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Description</label>
+                <p className="mt-1 text-sm">{selectedScenario.detailedDescription}</p>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Key Indicators</label>
+                <ul className="mt-2 space-y-1">
+                  {selectedScenario.keyIndicators.map((indicator, index) => (
+                    <li key={index} className="text-sm flex items-start space-x-2">
+                      <span className="text-primary mt-1">•</span>
+                      <span>{indicator}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Common Use Cases</label>
+                <p className="mt-1 text-sm">{selectedScenario.commonUseCase}</p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setShowScenarioDialog(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+} 

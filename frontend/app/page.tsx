@@ -47,12 +47,10 @@ export default function Dashboard() {
   const seedData = async () => {
     setSeeding(true)
     try {
-      await api.post('/seed-data', null, {
-        params: { num_users: 50, num_transactions: 200 }
-      })
+      await api.post('/seed-data')
       await loadStats()
     } catch (error) {
-      console.error('Failed to seed data:', error)
+      console.error('Failed to load data:', error)
     } finally {
       setSeeding(false)
     }
@@ -86,7 +84,7 @@ export default function Dashboard() {
         </div>
         <div className="space-x-2">
           <Button onClick={seedData} disabled={seeding}>
-            {seeding ? 'Seeding...' : 'Seed Data'}
+            {seeding ? 'Loading...' : 'Load Data'}
           </Button>
           <Button onClick={runFraudDetection} variant="outline">
             Run Fraud Detection
