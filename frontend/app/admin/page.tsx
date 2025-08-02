@@ -236,7 +236,7 @@ export default function AdminPage() {
         
         setStats(prev => ({
           ...prev,
-          duration: `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+          duration: `₹{hours.toString().padStart(2, '0')}:₹{minutes.toString().padStart(2, '0')}:₹{seconds.toString().padStart(2, '0')}`
         }))
       }, 1000)
     }

@@ -121,7 +121,7 @@ async def root():
 @app.get("/health")
 async def health_check():
     """Detailed health check endpoint"""
-    graph_status = "connected" if graph_service.client else "mock_mode"
+    graph_status = "connected" if graph_service.client else "error"
     return {
         "status": "healthy",
         "graph_connection": graph_status,

@@ -74,7 +74,7 @@ start_docker_containers() {
     fi
     
     # Start containers in detached mode
-    docker-compose up -d
+    # docker-compose up -d
     
     if [ $? -eq 0 ]; then
         echo "✅ Docker containers started successfully"
@@ -117,7 +117,7 @@ stop_docker_containers() {
 cleanup() {
     echo "🛑 Shutting down applications..."
     kill $BACKEND_PID $FRONTEND_PID 2>/dev/null
-    stop_docker_containers
+    # stop_docker_containers
     exit 0
 }
 

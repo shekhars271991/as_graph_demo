@@ -47,11 +47,11 @@ class GraphService:
             return True
                 
         except Exception as e:
-            logger.warning(f"⚠️  Could not connect to Aerospike Graph: {e}")
-            logger.warning("   Running in mock mode - graph features will be simulated")
+            logger.error(f"❌ Could not connect to Aerospike Graph: {e}")
+            logger.error("   Graph database connection is required. Please ensure Aerospike Graph is running on port 8182")
             self.client = None
             self.connection = None
-            return False
+            raise Exception(f"Failed to connect to Aerospike Graph: {e}")
 
     async def connect(self):
         """Async wrapper for synchronous connection"""
@@ -124,8 +124,8 @@ class GraphService:
                 # Use real graph database - load data asynchronously
                 return await self._load_users_to_graph_async()
             else:
-                # Store data in memory for mock mode
-                return {"users": len(self.users_data), "accounts": 0, "transactions": 0, "message": "Data loaded in mock mode"}
+                # No graph client available
+                raise Exception("Graph client not available. Cannot load data without graph database connection.")
                 
         except Exception as e:
             logger.error(f"Error loading users data: {e}")
@@ -476,15 +476,8 @@ class GraphService:
                     graph_health="connected"
                 )
             else:
-                # Mock mode
-                return DashboardStats(
-                    total_users=len(self.users_data),
-                    total_transactions=0,
-                    flagged_transactions=0,
-                    total_amount=0.0,
-                    fraud_detection_rate=0.0,
-                    graph_health="mock_mode"
-                )
+                # No graph client available
+                raise Exception("Graph client not available. Cannot get dashboard stats without graph database connection.")
                 
         except Exception as e:
             logger.error(f"Error getting dashboard stats: {e}")
@@ -568,18 +561,8 @@ class GraphService:
                     'total_pages': (len(all_users) + page_size - 1) // page_size
                 }
             else:
-                # Mock mode
-                start_idx = (page - 1) * page_size
-                end_idx = start_idx + page_size
-                paginated_users = self.users_data[start_idx:end_idx]
-                
-                return {
-                    'users': paginated_users,
-                    'total': len(self.users_data),
-                    'page': page,
-                    'page_size': page_size,
-                    'total_pages': (len(self.users_data) + page_size - 1) // page_size
-                }
+                # No graph client available
+                raise Exception("Graph client not available. Cannot get users without graph database connection.")
                 
         except Exception as e:
             logger.error(f"Error getting users paginated: {e}")
@@ -794,30 +777,65 @@ class GraphService:
                             else:
                                 transaction_props[key] = value
                         
-                        # Get the account that initiated this transaction
+                        # Get the sender account that initiated this transaction
                         try:
-                            logger.info(f"Looking for account that initiated transaction {transaction_props.get('transaction_id', 'unknown')}")
-                            account_vertex = transaction_vertex.in_("INITIATED").next()
-                            logger.info(f"Found account vertex: {account_vertex}")
+                            logger.info(f"Looking for sender account that initiated transaction {transaction_props.get('transaction_id', 'unknown')}")
                             
-                            account_props = {}
-                            acc_prop_map = self.client.V(account_vertex).value_map().next()
-                            for key, value in acc_prop_map.items():
-                                if isinstance(value, list) and len(value) > 0:
-                                    account_props[key] = value[0]
-                                else:
-                                    account_props[key] = value
-                            logger.info(f"Account properties: {account_props}")
-                            sender_id = account_props.get('account_id', 'Unknown')
-                            logger.info(f"Sender ID: {sender_id}")
+                            # Try to find the sender account using the INITIATED edge
+                            sender_account_vertices = self.client.V(transaction_vertex).in_("INITIATED").to_list()
+                            logger.info(f"Found {len(sender_account_vertices)} sender account vertices")
+                            
+                            if sender_account_vertices:
+                                sender_account_vertex = sender_account_vertices[0]
+                                logger.info(f"Found sender account vertex: {sender_account_vertex}")
+                                
+                                sender_account_props = {}
+                                sender_acc_prop_map = self.client.V(sender_account_vertex).value_map().next()
+                                for key, value in sender_acc_prop_map.items():
+                                    if isinstance(value, list) and len(value) > 0:
+                                        sender_account_props[key] = value[0]
+                                    else:
+                                        sender_account_props[key] = value
+                                logger.info(f"Sender account properties: {sender_account_props}")
+                                sender_id = sender_account_props.get('account_id', 'Unknown')
+                                logger.info(f"Sender ID: {sender_id}")
+                            else:
+                                logger.warning("No sender account vertices found")
+                                sender_id = 'Unknown'
                         except Exception as e:
-                            # If no account found, use a default
-                            logger.error(f"Error getting account for transaction: {e}")
+                            # If no sender account found, use a default
+                            logger.error(f"Error getting sender account for transaction: {e}")
                             sender_id = 'Unknown'
                         
-                        # For now, use the same account as receiver (self-transaction)
-                        # In a real system, you'd have separate sender and receiver accounts
-                        receiver_id = sender_id
+                        # Get the receiver account that received this transaction
+                        try:
+                            logger.info(f"Looking for receiver account for transaction {transaction_props.get('transaction_id', 'unknown')}")
+                            
+                            # Try to find the receiver account using the RECEIVED edge
+                            receiver_account_vertices = self.client.V(transaction_vertex).out("RECEIVED").to_list()
+                            logger.info(f"Found {len(receiver_account_vertices)} receiver account vertices")
+                            
+                            if receiver_account_vertices:
+                                receiver_account_vertex = receiver_account_vertices[0]
+                                logger.info(f"Found receiver account vertex: {receiver_account_vertex}")
+                                
+                                receiver_account_props = {}
+                                receiver_acc_prop_map = self.client.V(receiver_account_vertex).value_map().next()
+                                for key, value in receiver_acc_prop_map.items():
+                                    if isinstance(value, list) and len(value) > 0:
+                                        receiver_account_props[key] = value[0]
+                                    else:
+                                        receiver_account_props[key] = value
+                                logger.info(f"Receiver account properties: {receiver_account_props}")
+                                receiver_id = receiver_account_props.get('account_id', 'Unknown')
+                                logger.info(f"Receiver ID: {receiver_id}")
+                            else:
+                                logger.warning("No receiver account vertices found")
+                                receiver_id = 'Unknown'
+                        except Exception as e:
+                            # If no receiver account found, use a default
+                            logger.error(f"Error getting receiver account for transaction: {e}")
+                            receiver_id = 'Unknown'
                         
                         transactions_data.append({
                             'id': transaction_props.get('transaction_id', ''),
@@ -846,14 +864,8 @@ class GraphService:
                     'total_pages': (len(all_transactions) + page_size - 1) // page_size
                 }
             else:
-                # Mock mode - no transactions available
-                return {
-                    'transactions': [],
-                    'total': 0,
-                    'page': page,
-                    'page_size': page_size,
-                    'total_pages': 0
-                }
+                # No graph client available
+                raise Exception("Graph client not available. Cannot get transactions without graph database connection.")
                 
         except Exception as e:
             logger.error(f"Error getting transactions paginated: {e}")
@@ -940,14 +952,8 @@ class GraphService:
                     'total_pages': (len(all_transactions) + page_size - 1) // page_size
                 }
             else:
-                # Mock mode - no transactions available
-                return {
-                    'transactions': [],
-                    'total': 0,
-                    'page': page,
-                    'page_size': page_size,
-                    'total_pages': 0
-                }
+                # No graph client available
+                raise Exception("Graph client not available. Cannot search transactions without graph database connection.")
                 
         except Exception as e:
             logger.error(f"Error searching transactions: {e}")
@@ -962,79 +968,39 @@ class GraphService:
     async def get_user_transactions_paginated(self, user_id: str, page: int, page_size: int) -> Dict[str, Any]:
         """Get paginated transactions for a specific user"""
         try:
-            # For now, return mock data
-            all_transactions = []
-            
-            # Generate mock transactions for the specific user
-            for i in range(30):
-                transaction = {
-                    "id": f"TXN{user_id}{i+1:03d}",
-                    "amount": round(random.uniform(10, 5000), 2),
-                    "currency": "USD",
-                    "timestamp": (datetime.now() - timedelta(days=random.randint(0, 30))).isoformat(),
-                    "status": random.choice(["completed", "pending", "failed"]),
-                    "fraud_score": round(random.uniform(0, 100), 1),
-                    "transaction_type": random.choice(["transfer", "payment", "withdrawal", "deposit"]),
-                    "merchant": random.choice(["Amazon", "Starbucks", "Uber", "Target", "Walmart"]),
-                    "location": random.choice(["New York, NY", "Los Angeles, CA", "Chicago, IL", "Houston, TX", "Phoenix, AZ"]),
-                    "is_fraud": random.random() < 0.1,
-                    "fraud_type": random.choice([None, "money_laundering", "identity_theft", "card_fraud"]),
+            if self.client:
+                # Query real graph for user's transactions
+                # This would need to be implemented to query the graph database
+                # For now, return empty result
+                return {
+                    "transactions": [],
+                    "total": 0,
+                    "page": page,
+                    "page_size": page_size,
+                    "total_pages": 0,
                     "user_id": user_id
                 }
-                all_transactions.append(transaction)
-            
-            # Apply pagination
-            start_idx = (page - 1) * page_size
-            end_idx = start_idx + page_size
-            paginated_transactions = all_transactions[start_idx:end_idx]
-            
-            total = len(all_transactions)
-            total_pages = (total + page_size - 1) // page_size
-            
-            return {
-                "transactions": paginated_transactions,
-                "total": total,
-                "page": page,
-                "page_size": page_size,
-                "total_pages": total_pages,
-                "user_id": user_id
-            }
+            else:
+                # No graph client available
+                raise Exception("Graph client not available. Cannot get user transactions without graph database connection.")
         except Exception as e:
             logger.error(f"Error in get_user_transactions_paginated: {e}")
-            return {
-                "transactions": [],
-                "total": 0,
-                "page": page,
-                "page_size": page_size,
-                "total_pages": 0,
-                "user_id": user_id
-            }
+            raise Exception(f"Failed to get user transactions: {e}")
 
     async def get_user_accounts(self, user_id: str) -> List[Dict[str, Any]]:
         """Get all accounts for a specific user"""
         try:
-            # For now, return mock data
-            accounts = []
-            
-            # Generate 1-3 accounts per user
-            num_accounts = random.randint(1, 3)
-            account_types = ["checking", "savings", "credit"]
-            
-            for i in range(num_accounts):
-                account_type = account_types[i] if i < len(account_types) else "checking"
-                account = {
-                    "id": f"ACC{user_id}{i+1:02d}",
-                    "account_type": account_type,
-                    "balance": round(random.uniform(-5000, 50000), 2),
-                    "created_date": (datetime.now() - timedelta(days=random.randint(0, 365))).isoformat(),
-                    "user_id": user_id
-                }
-                accounts.append(account)
-            
-            return accounts
+            if self.client:
+                # Query real graph for user's accounts
+                # This would need to be implemented to query the graph database
+                # For now, return empty result
+                return []
+            else:
+                # No graph client available
+                raise Exception("Graph client not available. Cannot get user accounts without graph database connection.")
         except Exception as e:
             logger.error(f"Error in get_user_accounts: {e}")
-            return []
+            raise Exception(f"Failed to get user accounts: {e}")
 
     async def delete_all_data(self) -> Dict[str, Any]:
         """Delete all data from the graph database"""

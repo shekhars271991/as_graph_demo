@@ -679,31 +679,60 @@ class TransactionGeneratorService:
             if self.graph_service.client:
                 loop = asyncio.get_event_loop()
                 
-                # Find the account vertex
-                def find_account():
+                # Find sender account vertex
+                def find_sender_account():
                     try:
-                        return self.graph_service.client.V().has_label("account").has("account_id", transaction['account_id']).next()
-                    except:
+                        logger.info(f"Looking for sender account with ID: {transaction['account_id']}")
+                        account = self.graph_service.client.V().has_label("account").has("account_id", transaction['account_id']).next()
+                        logger.info(f"Found sender account vertex: {account}")
+                        return account
+                    except Exception as e:
+                        logger.error(f"Error finding sender account {transaction['account_id']}: {e}")
                         return None
                 
-                account_vertex = await loop.run_in_executor(None, find_account)
+                # Find receiver account vertex
+                def find_receiver_account():
+                    try:
+                        receiver_account_id = transaction.get('receiver_account_id')
+                        if not receiver_account_id or receiver_account_id == 'unknown':
+                            logger.warning(f"No valid receiver account ID found: {receiver_account_id}")
+                            return None
+                        
+                        logger.info(f"Looking for receiver account with ID: {receiver_account_id}")
+                        account = self.graph_service.client.V().has_label("account").has("account_id", receiver_account_id).next()
+                        logger.info(f"Found receiver account vertex: {account}")
+                        return account
+                    except Exception as e:
+                        logger.error(f"Error finding receiver account {transaction.get('receiver_account_id')}: {e}")
+                        return None
                 
-                if account_vertex:
+                sender_account_vertex = await loop.run_in_executor(None, find_sender_account)
+                receiver_account_vertex = await loop.run_in_executor(None, find_receiver_account)
+                
+                if sender_account_vertex and receiver_account_vertex:
                     # Create transaction vertex
                     def create_transaction_vertex():
                         return self.graph_service.client.add_v("transaction").property("transaction_id", transaction['id']).property("amount", transaction['amount']).property("currency", transaction['currency']).property("timestamp", transaction['timestamp']).property("location", transaction.get('location', 'Unknown')).property("fraud_score", transaction.get('fraud_score', 0.0)).property("type", transaction['transaction_type']).property("merchant", transaction.get('merchant', 'Unknown')).property("status", transaction.get('status', 'completed')).property("is_fraud", transaction.get('is_fraud', False)).property("fraud_type", transaction.get('fraud_type', '')).property("fraud_scenario", transaction.get('fraud_scenario', '')).next()
                     
                     transaction_vertex = await loop.run_in_executor(None, create_transaction_vertex)
                     
-                    # Create edge from account to transaction
-                    def create_edge():
-                        return self.graph_service.client.add_e("INITIATED").from_(account_vertex).to(transaction_vertex).iterate()
+                    # Create edge from sender account to transaction
+                    def create_sender_edge():
+                        return self.graph_service.client.add_e("INITIATED").from_(sender_account_vertex).to(transaction_vertex).iterate()
                     
-                    await loop.run_in_executor(None, create_edge)
+                    # Create edge from transaction to receiver account
+                    def create_receiver_edge():
+                        return self.graph_service.client.add_e("RECEIVED").from_(transaction_vertex).to(receiver_account_vertex).iterate()
                     
-                    logger.info(f"✅ Transaction {transaction['id']} stored in graph database")
+                    await loop.run_in_executor(None, create_sender_edge)
+                    await loop.run_in_executor(None, create_receiver_edge)
+                    
+                    logger.info(f"✅ Transaction {transaction['id']} stored in graph database with both sender and receiver edges")
                 else:
-                    logger.warning(f"⚠️ Account {transaction['account_id']} not found in graph database, skipping storage")
+                    if not sender_account_vertex:
+                        logger.warning(f"⚠️ Sender account {transaction['account_id']} not found in graph database, skipping storage")
+                    if not receiver_account_vertex:
+                        logger.warning(f"⚠️ Receiver account {transaction.get('receiver_account_id')} not found in graph database, skipping storage")
                 
         except Exception as e:
             logger.error(f"❌ Error storing transaction in graph: {e}")

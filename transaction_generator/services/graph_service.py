@@ -417,7 +417,7 @@ class GraphService:
                     flagged_transactions=0,
                     total_amount=0.0,
                     fraud_detection_rate=0.0,
-                    graph_health="mock_mode"
+                    graph_health="error"
                 )
                 
         except Exception as e:

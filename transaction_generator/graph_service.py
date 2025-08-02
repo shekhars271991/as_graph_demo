@@ -401,15 +401,8 @@ class GraphService:
                     graph_health="connected"
                 )
             else:
-                # Mock mode
-                return DashboardStats(
-                    total_users=len(self.users_data),
-                    total_transactions=0,
-                    flagged_transactions=0,
-                    total_amount=0.0,
-                    fraud_detection_rate=0.0,
-                    graph_health="mock_mode"
-                )
+                # No graph client available
+                raise Exception("Graph client not available. Cannot get dashboard stats without graph database connection.")
                 
         except Exception as e:
             logger.error(f"Error getting dashboard stats: {e}")
