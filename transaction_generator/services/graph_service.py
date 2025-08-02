@@ -156,7 +156,7 @@ class GraphService:
                 try:
                     # Create user vertex
                     def create_user():
-                        return self.client.add_v("User").property("userId", user_data['id']).property("name", user_data['name']).property("email", user_data['email']).property("age", user_data['age']).property("location", user_data['location']).property("occupation", user_data.get('occupation', 'Unknown')).property("risk_score", user_data.get('risk_score', 0.0)).property("signup_date", user_data['signup_date']).property("phone", user_data.get('phone', '')).next()
+                        return self.client.add_v("user").property("user_id", user_data['id']).property("name", user_data['name']).property("email", user_data['email']).property("phone", user_data.get('phone', '')).property("age", user_data['age']).property("location", user_data['location']).property("occupation", user_data.get('occupation', 'Unknown')).property("risk_score", user_data.get('risk_score', 0.0)).property("signup_date", user_data['signup_date']).next()
                     
                     user_vertex = await loop.run_in_executor(None, create_user)
                     users_created += 1
@@ -165,14 +165,14 @@ class GraphService:
                     for account_data in user_data.get('accounts', []):
                         try:
                             def create_account():
-                                return self.client.add_v("Account").property("accountId", account_data['id']).property("account_type", account_data['type']).property("balance", account_data['balance']).property("created_date", account_data['created_date']).next()
+                                return self.client.add_v("account").property("account_id", account_data['id']).property("type", account_data['type']).property("balance", account_data['balance']).property("status", "active").property("bank_name", "Demo Bank").property("created_date", account_data['created_date']).next()
                             
                             account_vertex = await loop.run_in_executor(None, create_account)
                             accounts_created += 1
                             
                             # Link user to account
                             def create_ownership():
-                                return self.client.add_e("owns").from_(user_vertex).to(account_vertex).property("since", "2024").iterate()
+                                return self.client.add_e("OWNS").from_(user_vertex).to(account_vertex).property("since", account_data['created_date']).iterate()
                             
                             await loop.run_in_executor(None, create_ownership)
                         except Exception as e:
@@ -182,7 +182,7 @@ class GraphService:
                     # Create some sample transactions between accounts
                     try:
                         def get_user_accounts():
-                            return self.client.V().has_label("Account").has("accountId", P.within([acc['id'] for acc in user_data.get('accounts', [])])).to_list()
+                            return self.client.V().has_label("account").has("account_id", P.within([acc['id'] for acc in user_data.get('accounts', [])])).to_list()
                         
                         user_accounts = await loop.run_in_executor(None, get_user_accounts)
                         
@@ -201,7 +201,16 @@ class GraphService:
                                         transaction_id = f"T{user_data['id']}_{i+1}"
                                         
                                         def create_transaction():
-                                            return self.client.add_e("Transaction").from_(source_account).to(destination_account).property("transactionId", transaction_id).property("amount", amount).property("timestamp", datetime.now().isoformat()).property("location", user_data['location']).property("fraud_score", random.uniform(0, 100)).property("type", "transfer").iterate()
+                                            # Create transaction vertex
+                                            transaction_vertex = self.client.add_v("transaction").property("transaction_id", transaction_id).property("amount", amount).property("timestamp", datetime.now().isoformat()).property("status", "completed").property("method", "transfer").property("ip_address", f"192.168.{random.randint(1,255)}.{random.randint(1,255)}").property("location_city", user_data['location']).property("location_country", "India").property("latitude", random.uniform(8.0, 37.0)).property("longitude", random.uniform(68.0, 97.0)).next()
+                                            
+                                            # Create INITIATED edge from source account to transaction
+                                            self.client.add_e("INITIATED").from_(source_account).to(transaction_vertex).iterate()
+                                            
+                                            # Create TRANSFERS_TO edge from source account to destination account
+                                            self.client.add_e("TRANSFERS_TO").from_(source_account).to(destination_account).property("transaction_id", transaction_id).property("amount", amount).property("timestamp", datetime.now().isoformat()).property("status", "completed").property("method", "transfer").iterate()
+                                            
+                                            return transaction_vertex
                                         
                                         await loop.run_in_executor(None, create_transaction)
                                         transactions_created += 1

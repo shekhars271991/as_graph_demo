@@ -152,7 +152,7 @@ class GraphService:
                 try:
                     # Create user vertex
                     def create_user():
-                        return self.client.add_v("User").property("userId", user_data['id']).property("name", user_data['name']).property("email", user_data['email']).property("age", user_data['age']).property("location", user_data['location']).property("occupation", user_data.get('occupation', 'Unknown')).property("risk_score", user_data.get('risk_score', 0.0)).property("signup_date", user_data['signup_date']).property("phone", user_data.get('phone', '')).next()
+                        return self.client.add_v("user").property("user_id", user_data['id']).property("name", user_data['name']).property("email", user_data['email']).property("phone", user_data.get('phone', '')).property("age", user_data['age']).property("location", user_data['location']).property("occupation", user_data.get('occupation', 'Unknown')).property("risk_score", user_data.get('risk_score', 0.0)).property("signup_date", user_data['signup_date']).next()
                     
                     user_vertex = await loop.run_in_executor(None, create_user)
                     users_created += 1
@@ -161,14 +161,14 @@ class GraphService:
                     for account_data in user_data.get('accounts', []):
                         try:
                             def create_account():
-                                return self.client.add_v("Account").property("accountId", account_data['id']).property("account_type", account_data['type']).property("balance", account_data['balance']).property("created_date", account_data['created_date']).next()
+                                return self.client.add_v("account").property("account_id", account_data['id']).property("type", account_data['type']).property("balance", account_data['balance']).property("status", "active").property("bank_name", "Demo Bank").property("created_date", account_data['created_date']).next()
                             
                             account_vertex = await loop.run_in_executor(None, create_account)
                             accounts_created += 1
                             
                             # Link user to account
                             def create_ownership():
-                                return self.client.add_e("HAS_ACCOUNT").from_(user_vertex).to(account_vertex).property("since", "2024").iterate()
+                                return self.client.add_e("OWNS").from_(user_vertex).to(account_vertex).property("since", account_data['created_date']).iterate()
                             
                             await loop.run_in_executor(None, create_ownership)
                         except Exception as e:
@@ -178,7 +178,7 @@ class GraphService:
                     # Create some sample transactions between accounts
                     try:
                         def get_user_accounts():
-                            return self.client.V().has_label("Account").has("accountId", P.within([acc['id'] for acc in user_data.get('accounts', [])])).to_list()
+                            return self.client.V().has_label("account").has("account_id", P.within([acc['id'] for acc in user_data.get('accounts', [])])).to_list()
                         
                         user_accounts = await loop.run_in_executor(None, get_user_accounts)
                         
@@ -197,7 +197,16 @@ class GraphService:
                                         transaction_id = f"T{user_data['id']}_{i+1}"
                                         
                                         def create_transaction():
-                                            return self.client.add_e("Transaction").from_(source_account).to(destination_account).property("transactionId", transaction_id).property("amount", amount).property("timestamp", datetime.now().isoformat()).property("location", user_data['location']).property("fraud_score", random.uniform(0, 100)).property("type", "transfer").iterate()
+                                            # Create transaction vertex
+                                            transaction_vertex = self.client.add_v("transaction").property("transaction_id", transaction_id).property("amount", amount).property("timestamp", datetime.now().isoformat()).property("status", "completed").property("method", "transfer").property("ip_address", f"192.168.{random.randint(1,255)}.{random.randint(1,255)}").property("location_city", user_data['location']).property("location_country", "India").property("latitude", random.uniform(8.0, 37.0)).property("longitude", random.uniform(68.0, 97.0)).next()
+                                            
+                                            # Create INITIATED edge from source account to transaction
+                                            self.client.add_e("INITIATED").from_(source_account).to(transaction_vertex).iterate()
+                                            
+                                            # Create TRANSFERS_TO edge from source account to destination account
+                                            self.client.add_e("TRANSFERS_TO").from_(source_account).to(destination_account).property("transaction_id", transaction_id).property("amount", amount).property("timestamp", datetime.now().isoformat()).property("status", "completed").property("method", "transfer").iterate()
+                                            
+                                            return transaction_vertex
                                         
                                         await loop.run_in_executor(None, create_transaction)
                                         transactions_created += 1
@@ -232,70 +241,97 @@ class GraphService:
         """Get user's profile, connected accounts, and transaction summary"""
         try:
             if self.client:
-                # Query real graph - run in thread pool
-                loop = asyncio.get_event_loop()
-                
-                def get_user_vertices():
-                    return self.client.V().has_label("User").has("userId", user_id).to_list()
-                
-                user_vertices = await loop.run_in_executor(None, get_user_vertices)
+                # Query real graph - use synchronous calls like get_users_paginated
+                user_vertices = self.client.V().has_label("user").has("user_id", user_id).to_list()
                 if not user_vertices:
                     return None
                 
                 user_vertex = user_vertices[0]
+                user_props = {}
                 
-                def get_user_props():
-                    return user_vertex.value_map().next()
-                
-                user_props = await loop.run_in_executor(None, get_user_props)
+                # Get user properties using the same approach as get_users_paginated
+                props = self.client.V(user_vertex).value_map().next()
+                for key, value in props.items():
+                    if isinstance(value, list) and len(value) > 0:
+                        user_props[key] = value[0]
+                    else:
+                        user_props[key] = value
                 
                 # Get user's accounts
-                def get_account_vertices():
-                    return self.client.V(user_vertex).out("HAS_ACCOUNT").to_list()
-                
-                account_vertices = await loop.run_in_executor(None, get_account_vertices)
+                account_vertices = self.client.V(user_vertex).out("OWNS").to_list()
                 accounts = []
                 for acc_vertex in account_vertices:
-                    def get_acc_props():
-                        return acc_vertex.value_map().next()
+                    acc_props = {}
+                    acc_prop_map = self.client.V(acc_vertex).value_map().next()
+                    for key, value in acc_prop_map.items():
+                        if isinstance(value, list) and len(value) > 0:
+                            acc_props[key] = value[0]
+                        else:
+                            acc_props[key] = value
                     
-                    acc_props = await loop.run_in_executor(None, get_acc_props)
                     accounts.append(Account(
-                        id=acc_props.get('accountId', [''])[0],
+                        id=acc_props.get('account_id', ''),
                         user_id=user_id,
-                        account_type=acc_props.get('account_type', ['checking'])[0],
-                        balance=acc_props.get('balance', [0.0])[0],
-                        created_date=acc_props.get('created_date', [''])[0]
+                        account_type=acc_props.get('type', 'checking'),
+                        balance=acc_props.get('balance', 0.0),
+                        created_date=acc_props.get('created_date', '')
                     ))
                 
                 # Get transaction summary
-                def get_transaction_edges():
-                    return self.client.V(user_vertex).out("owns").outE("Transaction").to_list()
-                
-                transaction_edges = await loop.run_in_executor(None, get_transaction_edges)
+                transaction_edges = self.client.V(user_vertex).out("OWNS").out("INITIATED").to_list()
                 total_transactions = len(transaction_edges)
                 
                 total_amount = 0.0
                 for edge in transaction_edges:
-                    def get_edge_props():
-                        return edge.value_map().next()
-                    
-                    edge_props = await loop.run_in_executor(None, get_edge_props)
-                    total_amount += edge_props.get('amount', [0.0])[0]
+                    edge_props = {}
+                    edge_prop_map = edge.value_map().next()
+                    for key, value in edge_prop_map.items():
+                        if isinstance(value, list) and len(value) > 0:
+                            edge_props[key] = value[0]
+                        else:
+                            edge_props[key] = value
+                    total_amount += edge_props.get('amount', 0.0)
+                
+                # Calculate fraud risk level based on risk score
+                risk_score = user_props.get('risk_score', 0.0)
+                if risk_score < 25:
+                    fraud_risk_level = FraudRiskLevel.LOW
+                elif risk_score < 50:
+                    fraud_risk_level = FraudRiskLevel.MEDIUM
+                elif risk_score < 75:
+                    fraud_risk_level = FraudRiskLevel.HIGH
+                else:
+                    fraud_risk_level = FraudRiskLevel.CRITICAL
+                
+                # For now, we'll set sent/received amounts to the same value
+                # In a real implementation, you'd calculate these separately
+                total_amount_sent = total_amount / 2
+                total_amount_received = total_amount / 2
+                
+                # Create empty recent transactions list (we'll populate this later)
+                recent_transactions = []
+                
+                # For now, we'll set connected users to empty list
+                # In a real implementation, you'd find users connected via transactions
+                connected_users = []
                 
                 return UserSummary(
                     user=User(
-                        id=user_props.get('userId', [''])[0],
-                        name=user_props.get('name', [''])[0],
-                        email=user_props.get('email', [''])[0],
-                        age=user_props.get('age', [0])[0],
-                        location=user_props.get('location', [''])[0],
-                        risk_score=user_props.get('risk_score', [0.0])[0],
-                        signup_date=user_props.get('signup_date', [''])[0]
+                        id=user_props.get('user_id', ''),
+                        name=user_props.get('name', ''),
+                        email=user_props.get('email', ''),
+                        age=user_props.get('age', 0),
+                        location=user_props.get('location', ''),
+                        risk_score=user_props.get('risk_score', 0.0),
+                        signup_date=user_props.get('signup_date', '')
                     ),
                     accounts=accounts,
+                    recent_transactions=recent_transactions,
                     total_transactions=total_transactions,
-                    total_amount=total_amount
+                    total_amount_sent=total_amount_sent,
+                    total_amount_received=total_amount_received,
+                    fraud_risk_level=fraud_risk_level,
+                    connected_users=connected_users
                 )
             else:
                 # Mock mode - return data from loaded users
@@ -313,6 +349,17 @@ class GraphService:
                         created_date=acc_data['created_date']
                     ))
                 
+                # Calculate fraud risk level based on risk score
+                risk_score = user_data.get('risk_score', 0.0)
+                if risk_score < 25:
+                    fraud_risk_level = FraudRiskLevel.LOW
+                elif risk_score < 50:
+                    fraud_risk_level = FraudRiskLevel.MEDIUM
+                elif risk_score < 75:
+                    fraud_risk_level = FraudRiskLevel.HIGH
+                else:
+                    fraud_risk_level = FraudRiskLevel.CRITICAL
+                
                 return UserSummary(
                     user=User(
                         id=user_data['id'],
@@ -324,8 +371,12 @@ class GraphService:
                         signup_date=user_data['signup_date']
                     ),
                     accounts=accounts,
-                    total_transactions=0,  # No transactions in mock mode
-                    total_amount=0.0
+                    recent_transactions=[],  # No transactions in mock mode
+                    total_transactions=0,
+                    total_amount_sent=0.0,
+                    total_amount_received=0.0,
+                    fraud_risk_level=fraud_risk_level,
+                    connected_users=[]
                 )
                 
         except Exception as e:
@@ -336,33 +387,61 @@ class GraphService:
         """Get detailed transaction information"""
         try:
             if self.client:
-                # Query real graph
-                transaction_edges = self.client.E().has("transactionId", transaction_id).to_list()
-                if not transaction_edges:
+                # Query real graph - look for transaction vertex
+                loop = asyncio.get_event_loop()
+                
+                def get_transaction_vertex():
+                    return self.client.V().has_label("transaction").has("transaction_id", transaction_id).to_list()
+                
+                transaction_vertices = await loop.run_in_executor(None, get_transaction_vertex)
+                if not transaction_vertices:
                     return None
                 
-                edge = transaction_edges[0]
-                edge_props = edge.value_map().next()
+                transaction_vertex = transaction_vertices[0]
                 
-                # Get source and destination accounts
-                source_vertex = edge.in_vertex().next()
-                dest_vertex = edge.out_vertex().next()
+                def get_transaction_props():
+                    return transaction_vertex.value_map().next()
                 
-                source_props = source_vertex.value_map().next()
-                dest_props = dest_vertex.value_map().next()
+                transaction_props = await loop.run_in_executor(None, get_transaction_props)
                 
-                return TransactionDetail(
-                    id=edge_props.get('transactionId', [''])[0],
-                    sender_id=source_props.get('accountId', [''])[0],
-                    receiver_id=dest_props.get('accountId', [''])[0],
-                    amount=edge_props.get('amount', [0.0])[0],
-                    currency="USD",
-                    timestamp=edge_props.get('timestamp', [''])[0],
-                    location=edge_props.get('location', [''])[0],
-                    status="completed",
-                    fraud_score=edge_props.get('fraud_score', [0.0])[0],
-                    device_id=None
-                )
+                # Get source account (account that initiated the transaction)
+                def get_source_account():
+                    return self.client.V(transaction_vertex).in_("INITIATED").to_list()
+                
+                source_accounts = await loop.run_in_executor(None, get_source_account)
+                source_account = source_accounts[0] if source_accounts else None
+                
+                # Get destination account from TRANSFERS_TO edge
+                def get_dest_account():
+                    return self.client.V(source_account).out("TRANSFERS_TO").to_list()
+                
+                dest_accounts = await loop.run_in_executor(None, get_dest_account)
+                dest_account = dest_accounts[0] if dest_accounts else None
+                
+                if source_account and dest_account:
+                    def get_source_props():
+                        return source_account.value_map().next()
+                    
+                    def get_dest_props():
+                        return dest_account.value_map().next()
+                    
+                    source_props = await loop.run_in_executor(None, get_source_props)
+                    dest_props = await loop.run_in_executor(None, get_dest_props)
+                    
+                    return TransactionDetail(
+                        id=transaction_props.get('transaction_id', [''])[0],
+                        sender_id=source_props.get('account_id', [''])[0],
+                        receiver_id=dest_props.get('account_id', [''])[0],
+                        amount=transaction_props.get('amount', [0.0])[0],
+                        currency="USD",
+                        timestamp=transaction_props.get('timestamp', [''])[0],
+                        location=transaction_props.get('location_city', [''])[0],
+                        status=transaction_props.get('status', ['completed'])[0],
+                        fraud_score=0.0,  # Not stored in new model
+                        device_id=None
+                    )
+                else:
+                    return None
             else:
                 # Mock mode - no transactions available
                 return None
@@ -376,15 +455,15 @@ class GraphService:
         try:
             if self.client:
                 # Query real graph
-                total_users = len(self.client.V().has_label("User").to_list())
-                total_transactions = len(self.client.E().has_label("Transaction").to_list())
+                total_users = len(self.client.V().has_label("user").to_list())
+                total_transactions = len(self.client.V().has_label("transaction").to_list())
                 
-                # Get flagged transactions (high fraud score)
-                flagged_transactions = len(self.client.E().has_label("Transaction").has("fraud_score", P.gte(70)).to_list())
+                # Get flagged transactions (high risk transactions)
+                flagged_transactions = len(self.client.V().has_label("transaction").has("amount", P.gte(10000)).to_list())
                 
                 # Calculate total amount
-                transaction_edges = self.client.E().has_label("Transaction").to_list()
-                total_amount = sum(edge.value_map().next().get('amount', [0.0])[0] for edge in transaction_edges)
+                transaction_vertices = self.client.V().has_label("transaction").to_list()
+                total_amount = sum(vertex.value_map().next().get('amount', [0.0])[0] for vertex in transaction_vertices)
                 
                 fraud_rate = (flagged_transactions / total_transactions * 100) if total_transactions > 0 else 0
                 
@@ -428,7 +507,7 @@ class GraphService:
         try:
             if self.client:
                 # Query real graph
-                all_users = self.client.V().has_label("User").to_list()
+                all_users = self.client.V().has_label("user").to_list()
                 
                 # Paginate
                 start_idx = (page - 1) * page_size
@@ -471,13 +550,13 @@ class GraphService:
                         logger.error(f"Error getting user accounts: {e}")
                     
                     users_data.append({
-                        'id': user_props.get('userId', ''),
+                        'id': user_props.get('user_id', ''),
                         'name': user_props.get('name', ''),
                         'email': user_props.get('email', ''),
                         'age': user_props.get('age', 0),
                         'location': user_props.get('location', ''),
-                        'risk_score': user_props.get('riskScore', 0.0),
-                        'signup_date': user_props.get('signupDate', ''),
+                        'risk_score': user_props.get('risk_score', 0.0),
+                        'signup_date': user_props.get('signup_date', ''),
                         'accounts': accounts
                     })
                 
@@ -517,9 +596,9 @@ class GraphService:
         try:
             if self.client:
                 # Query real graph with search
-                all_users = self.client.V().has_label("User").or_(
+                all_users = self.client.V().has_label("user").or_(
                     __.has("name", P.text_contains(query)),
-                    __.has("userId", P.text_contains(query)),
+                    __.has("user_id", P.text_contains(query)),
                     __.has("email", P.text_contains(query))
                 ).to_list()
                 
@@ -584,9 +663,9 @@ class GraphService:
         try:
             if self.client:
                 # Query real graph
-                users = self.client.V().has_label("User").or_(
+                users = self.client.V().has_label("user").or_(
                     __.has("name", P.text_contains(query)),
-                    __.has("userId", P.text_contains(query)),
+                    __.has("user_id", P.text_contains(query)),
                     __.has("email", P.text_contains(query))
                 ).to_list()
                 
@@ -594,7 +673,7 @@ class GraphService:
                 for user_vertex in users:
                     user_props = user_vertex.value_map().next()
                     results.append(SearchResult(
-                        id=user_props.get('userId', [''])[0],
+                        id=user_props.get('user_id', [''])[0],
                         name=user_props.get('name', [''])[0],
                         type="user",
                         score=user_props.get('risk_score', [0.0])[0]
@@ -629,16 +708,16 @@ class GraphService:
         try:
             if self.client:
                 # Query real graph
-                transactions = self.client.E().has_label("Transaction").has("transactionId", P.text_contains(query)).to_list()
+                transactions = self.client.V().has_label("transaction").has("transaction_id", P.text_contains(query)).to_list()
                 
                 results = []
-                for edge in transactions:
-                    edge_props = edge.value_map().next()
+                for transaction_vertex in transactions:
+                    transaction_props = transaction_vertex.value_map().next()
                     results.append(SearchResult(
-                        id=edge_props.get('transactionId', [''])[0],
-                        name=f"Transaction {edge_props.get('transactionId', [''])[0]}",
+                        id=transaction_props.get('transaction_id', [''])[0],
+                        name=f"Transaction {transaction_props.get('transaction_id', [''])[0]}",
                         type="transaction",
-                        score=edge_props.get('fraud_score', [0.0])[0]
+                        score=0.0
                     ))
                 
                 return results
@@ -655,11 +734,17 @@ class GraphService:
         try:
             if self.client:
                 # Update in real graph
-                edges = self.client.E().has("transactionId", transaction_id).to_list()
-                if edges:
-                    edge = edges[0]
-                    edge.property("status", status).iterate()
-                    return True
+                loop = asyncio.get_event_loop()
+                
+                def update_transaction():
+                    vertices = self.client.V().has_label("transaction").has("transaction_id", transaction_id).to_list()
+                    if vertices:
+                        vertex = vertices[0]
+                        vertex.property("status", status).iterate()
+                        return True
+                    return False
+                
+                return await loop.run_in_executor(None, update_transaction)
                 return False
             else:
                 # Mock mode - no transactions to update
@@ -689,8 +774,8 @@ class GraphService:
         """Get paginated list of all transactions"""
         try:
             if self.client:
-                # Query real graph
-                all_transactions = self.client.E().has_label("Transaction").to_list()
+                # Query real graph - use synchronous calls like get_users_paginated
+                all_transactions = self.client.V().has_label("transaction").to_list()
                 
                 # Paginate
                 start_idx = (page - 1) * page_size
@@ -698,28 +783,60 @@ class GraphService:
                 paginated_transactions = all_transactions[start_idx:end_idx]
                 
                 transactions_data = []
-                for edge in paginated_transactions:
-                    edge_props = edge.value_map().next()
-                    
-                    # Get source and destination accounts
-                    source_vertex = edge.in_vertex().next()
-                    dest_vertex = edge.out_vertex().next()
-                    
-                    source_props = source_vertex.value_map().next()
-                    dest_props = dest_vertex.value_map().next()
-                    
-                    transactions_data.append({
-                        'id': edge_props.get('transactionId', [''])[0],
-                        'sender_id': source_props.get('accountId', [''])[0],
-                        'receiver_id': dest_props.get('accountId', [''])[0],
-                        'amount': edge_props.get('amount', [0.0])[0],
-                        'currency': 'USD',
-                        'timestamp': edge_props.get('timestamp', [''])[0],
-                        'location': edge_props.get('location', [''])[0],
-                        'status': edge_props.get('status', ['completed'])[0],
-                        'fraud_score': edge_props.get('fraud_score', [0.0])[0],
-                        'device_id': None
-                    })
+                for transaction_vertex in paginated_transactions:
+                    try:
+                        # Get transaction properties using the same approach as get_users_paginated
+                        transaction_props = {}
+                        props = self.client.V(transaction_vertex).value_map().next()
+                        for key, value in props.items():
+                            if isinstance(value, list) and len(value) > 0:
+                                transaction_props[key] = value[0]
+                            else:
+                                transaction_props[key] = value
+                        
+                        # Get the account that initiated this transaction
+                        try:
+                            logger.info(f"Looking for account that initiated transaction {transaction_props.get('transaction_id', 'unknown')}")
+                            account_vertex = transaction_vertex.in_("INITIATED").next()
+                            logger.info(f"Found account vertex: {account_vertex}")
+                            
+                            account_props = {}
+                            acc_prop_map = self.client.V(account_vertex).value_map().next()
+                            for key, value in acc_prop_map.items():
+                                if isinstance(value, list) and len(value) > 0:
+                                    account_props[key] = value[0]
+                                else:
+                                    account_props[key] = value
+                            logger.info(f"Account properties: {account_props}")
+                            sender_id = account_props.get('account_id', 'Unknown')
+                            logger.info(f"Sender ID: {sender_id}")
+                        except Exception as e:
+                            # If no account found, use a default
+                            logger.error(f"Error getting account for transaction: {e}")
+                            sender_id = 'Unknown'
+                        
+                        # For now, use the same account as receiver (self-transaction)
+                        # In a real system, you'd have separate sender and receiver accounts
+                        receiver_id = sender_id
+                        
+                        transactions_data.append({
+                            'id': transaction_props.get('transaction_id', ''),
+                            'sender_id': sender_id,
+                            'receiver_id': receiver_id,
+                            'amount': transaction_props.get('amount', 0.0),
+                            'currency': 'USD',
+                            'timestamp': transaction_props.get('timestamp', ''),
+                            'location': transaction_props.get('location', 'Unknown'),
+                            'status': transaction_props.get('status', 'completed'),
+                            'fraud_score': transaction_props.get('fraud_score', 0.0),
+                            'transaction_type': transaction_props.get('type', 'transfer'),
+                            'merchant': transaction_props.get('merchant', 'Unknown'),
+                            'is_fraud': transaction_props.get('is_fraud', False),
+                            'device_id': None
+                        })
+                    except Exception as e:
+                        logger.error(f"Error processing transaction vertex: {e}")
+                        continue
                 
                 return {
                     'transactions': transactions_data,
@@ -752,11 +869,17 @@ class GraphService:
         """Search transactions with pagination"""
         try:
             if self.client:
-                # Query real graph with search
-                all_transactions = self.client.E().has_label("Transaction").or_(
-                    __.has("transactionId", P.text_contains(query)),
-                    __.has("location", P.text_contains(query))
-                ).to_list()
+                # Query real graph with search using thread pool
+                import asyncio
+                loop = asyncio.get_event_loop()
+                
+                def search_transactions():
+                    return self.client.V().has_label("transaction").or_(
+                        __.has("transaction_id", P.text_contains(query)),
+                        __.has("location_city", P.text_contains(query))
+                    ).to_list()
+                
+                all_transactions = await loop.run_in_executor(None, search_transactions)
                 
                 # Paginate
                 start_idx = (page - 1) * page_size
@@ -764,28 +887,50 @@ class GraphService:
                 paginated_transactions = all_transactions[start_idx:end_idx]
                 
                 transactions_data = []
-                for edge in paginated_transactions:
-                    edge_props = edge.value_map().next()
-                    
-                    # Get source and destination accounts
-                    source_vertex = edge.in_vertex().next()
-                    dest_vertex = edge.out_vertex().next()
-                    
-                    source_props = source_vertex.value_map().next()
-                    dest_props = dest_vertex.value_map().next()
-                    
-                    transactions_data.append({
-                        'id': edge_props.get('transactionId', [''])[0],
-                        'sender_id': source_props.get('accountId', [''])[0],
-                        'receiver_id': dest_props.get('accountId', [''])[0],
-                        'amount': edge_props.get('amount', [0.0])[0],
-                        'currency': 'USD',
-                        'timestamp': edge_props.get('timestamp', [''])[0],
-                        'location': edge_props.get('location', [''])[0],
-                        'status': edge_props.get('status', ['completed'])[0],
-                        'fraud_score': edge_props.get('fraud_score', [0.0])[0],
-                        'device_id': None
-                    })
+                for transaction_vertex in paginated_transactions:
+                    try:
+                        def get_transaction_props():
+                            return transaction_vertex.value_map().next()
+                        
+                        transaction_props = await loop.run_in_executor(None, get_transaction_props)
+                        
+                        # Get the account that initiated this transaction
+                        def get_account_vertex():
+                            return transaction_vertex.in_("INITIATED").next()
+                        
+                        try:
+                            account_vertex = await loop.run_in_executor(None, get_account_vertex)
+                            
+                            def get_account_props():
+                                return account_vertex.value_map().next()
+                            
+                            account_props = await loop.run_in_executor(None, get_account_props)
+                            sender_id = account_props.get('account_id', [''])[0]
+                        except:
+                            # If no account found, use a default
+                            sender_id = 'Unknown'
+                        
+                        # For now, use the same account as receiver (self-transaction)
+                        receiver_id = sender_id
+                        
+                        transactions_data.append({
+                            'id': transaction_props.get('transaction_id', [''])[0],
+                            'sender_id': sender_id,
+                            'receiver_id': receiver_id,
+                            'amount': transaction_props.get('amount', [0.0])[0],
+                            'currency': 'USD',
+                            'timestamp': transaction_props.get('timestamp', [''])[0],
+                            'location': transaction_props.get('location_city', ['Unknown'])[0],
+                            'status': transaction_props.get('status', ['completed'])[0],
+                            'fraud_score': 0.0,
+                            'transaction_type': transaction_props.get('method', ['transfer'])[0],
+                            'merchant': 'Unknown',
+                            'is_fraud': False,
+                            'device_id': None
+                        })
+                    except Exception as e:
+                        logger.error(f"Error processing search transaction vertex: {e}")
+                        continue
                 
                 return {
                     'transactions': transactions_data,
@@ -975,22 +1120,24 @@ class GraphService:
                     try:
                         # Create user vertex
                         def create_user():
-                            return self.client.addV("User").property(
-                                "userId", user_data['id']
+                            return self.client.addV("user").property(
+                                "user_id", user_data['id']
                             ).property(
                                 "name", user_data['name']
                             ).property(
                                 "email", user_data['email']
                             ).property(
+                                "phone", user_data.get('phone', '')
+                            ).property(
                                 "age", user_data['age']
                             ).property(
                                 "location", user_data['location']
                             ).property(
-                                "signupDate", user_data['signup_date']
+                                "occupation", user_data.get('occupation', 'Unknown')
                             ).property(
-                                "riskScore", user_data.get('risk_score', 0.0)
+                                "risk_score", user_data.get('risk_score', 0.0)
                             ).property(
-                                "isFlagged", user_data.get('is_flagged', False)
+                                "signup_date", user_data['signup_date']
                             ).next()
                         
                         user_vertex = await loop.run_in_executor(None, create_user)
@@ -998,14 +1145,18 @@ class GraphService:
                         # Create accounts for this user
                         for account_data in user_data.get('accounts', []):
                             def create_account():
-                                return self.client.addV("Account").property(
-                                    "accountId", account_data['id']
+                                return self.client.addV("account").property(
+                                    "account_id", account_data['id']
                                 ).property(
-                                    "accountType", account_data['type']
+                                    "type", account_data['type']
                                 ).property(
                                     "balance", account_data['balance']
                                 ).property(
-                                    "createdDate", account_data['created_date']
+                                    "status", "active"
+                                ).property(
+                                    "bank_name", "Demo Bank"
+                                ).property(
+                                    "created_date", account_data['created_date']
                                 ).next()
                             
                             account_vertex = await loop.run_in_executor(None, create_account)

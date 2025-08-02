@@ -32,7 +32,7 @@ const Switch = React.forwardRef<HTMLDivElement, SwitchProps>(
             e.preventDefault()
             e.stopPropagation()
             if (!disabled) {
-              onCheckedChange?.(!checked)
+          onCheckedChange?.(!checked)
             }
           }
         }}

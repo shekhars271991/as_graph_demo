@@ -692,10 +692,10 @@ export default function AdminPage() {
                     <div className="flex items-center justify-between w-full">
                       <div className="flex items-center space-x-3">
                         <div onClick={(e) => e.stopPropagation()}>
-                          <Switch
-                            checked={scenario.enabled}
-                            onCheckedChange={() => toggleScenario(scenario.id)}
-                          />
+                        <Switch
+                          checked={scenario.enabled}
+                          onCheckedChange={() => toggleScenario(scenario.id)}
+                        />
                         </div>
                         <div className="text-left">
                           <div className="font-medium">{scenario.name}</div>
@@ -765,10 +765,10 @@ export default function AdminPage() {
                     <div className="flex items-center justify-between w-full">
                       <div className="flex items-center space-x-3">
                         <div onClick={(e) => e.stopPropagation()}>
-                          <Switch
-                            checked={scenario.enabled}
-                            onCheckedChange={() => toggleScenario(scenario.id)}
-                          />
+                        <Switch
+                          checked={scenario.enabled}
+                          onCheckedChange={() => toggleScenario(scenario.id)}
+                        />
                         </div>
                         <div className="text-left">
                           <div className="font-medium">{scenario.name}</div>
@@ -838,10 +838,10 @@ export default function AdminPage() {
                     <div className="flex items-center justify-between w-full">
                       <div className="flex items-center space-x-3">
                         <div onClick={(e) => e.stopPropagation()}>
-                          <Switch
-                            checked={scenario.enabled}
-                            onCheckedChange={() => toggleScenario(scenario.id)}
-                          />
+                        <Switch
+                          checked={scenario.enabled}
+                          onCheckedChange={() => toggleScenario(scenario.id)}
+                        />
                         </div>
                         <div className="text-left">
                           <div className="font-medium">{scenario.name}</div>

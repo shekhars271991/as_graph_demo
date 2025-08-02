@@ -232,8 +232,11 @@ class TransactionGeneratorService:
                 # Generate transaction
                 transaction = await self._generate_transaction()
                 
-                # Store transaction
+                # Store transaction in memory
                 self.generated_transactions.append(transaction)
+                
+                # Store transaction in graph database
+                await self._store_transaction_in_graph(transaction)
                 
                 # Keep only last 1000 transactions
                 if len(self.generated_transactions) > 1000:
@@ -288,13 +291,18 @@ class TransactionGeneratorService:
             sender_account_id = None
             receiver_account_id = None
             
+            logger.info(f"Sender user: {sender_user.get('id')}, accounts: {sender_user.get('accounts')}")
+            logger.info(f"Receiver user: {receiver_user.get('id')}, accounts: {receiver_user.get('accounts')}")
+            
             if sender_user.get('accounts') and len(sender_user['accounts']) > 0:
                 sender_account = random.choice(sender_user['accounts'])
-                sender_account_id = sender_account.get('accountId', sender_account.get('id', 'unknown'))
+                sender_account_id = sender_account.get('account_id', sender_account.get('id', 'unknown'))
+                logger.info(f"Selected sender account: {sender_account_id}")
             
             if receiver_user.get('accounts') and len(receiver_user['accounts']) > 0:
                 receiver_account = random.choice(receiver_user['accounts'])
-                receiver_account_id = receiver_account.get('accountId', receiver_account.get('id', 'unknown'))
+                receiver_account_id = receiver_account.get('account_id', receiver_account.get('id', 'unknown'))
+                logger.info(f"Selected receiver account: {receiver_account_id}")
             
             # Generate transaction data
             transaction_id = str(uuid.uuid4())
@@ -637,12 +645,10 @@ class TransactionGeneratorService:
     async def _get_random_account(self, user_id: str = None) -> Optional[Dict[str, Any]]:
         """Get a random account from the graph database"""
         try:
-            # Query the graph database for accounts
-            accounts = await self.graph_service.get_transactions_paginated(1, 100)  # Get up to 100 accounts
-            if accounts and accounts.get('transactions'):
-                account_list = accounts['transactions']
-                if account_list:
-                    return random.choice(account_list)
+            # Get a random user first, then get their accounts
+            user = await self._get_random_user()
+            if user and user.get('accounts'):
+                return random.choice(user['accounts'])
             return None
         except Exception as e:
             logger.error(f"Error getting random account: {e}")
@@ -676,7 +682,7 @@ class TransactionGeneratorService:
                 # Find the account vertex
                 def find_account():
                     try:
-                        return self.graph_service.client.V().has_label("Account").has("accountId", transaction['account_id']).next()
+                        return self.graph_service.client.V().has_label("account").has("account_id", transaction['account_id']).next()
                     except:
                         return None
                 
@@ -685,13 +691,13 @@ class TransactionGeneratorService:
                 if account_vertex:
                     # Create transaction vertex
                     def create_transaction_vertex():
-                        return self.graph_service.client.add_v("Transaction").property("transactionId", transaction['id']).property("amount", transaction['amount']).property("currency", transaction['currency']).property("timestamp", transaction['timestamp']).property("location", transaction.get('location', 'Unknown')).property("fraud_score", transaction.get('fraud_score', 0.0)).property("type", transaction['transaction_type']).property("merchant", transaction.get('merchant', 'Unknown')).property("status", transaction.get('status', 'completed')).property("is_fraud", transaction.get('is_fraud', False)).property("fraud_type", transaction.get('fraud_type', '')).property("fraud_scenario", transaction.get('fraud_scenario', '')).next()
+                        return self.graph_service.client.add_v("transaction").property("transaction_id", transaction['id']).property("amount", transaction['amount']).property("currency", transaction['currency']).property("timestamp", transaction['timestamp']).property("location", transaction.get('location', 'Unknown')).property("fraud_score", transaction.get('fraud_score', 0.0)).property("type", transaction['transaction_type']).property("merchant", transaction.get('merchant', 'Unknown')).property("status", transaction.get('status', 'completed')).property("is_fraud", transaction.get('is_fraud', False)).property("fraud_type", transaction.get('fraud_type', '')).property("fraud_scenario", transaction.get('fraud_scenario', '')).next()
                     
                     transaction_vertex = await loop.run_in_executor(None, create_transaction_vertex)
                     
                     # Create edge from account to transaction
                     def create_edge():
-                        return self.graph_service.client.add_e("HAS_TRANSACTION").from_(account_vertex).to(transaction_vertex).iterate()
+                        return self.graph_service.client.add_e("INITIATED").from_(account_vertex).to(transaction_vertex).iterate()
                     
                     await loop.run_in_executor(None, create_edge)
                     

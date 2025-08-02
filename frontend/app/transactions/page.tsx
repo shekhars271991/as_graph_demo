@@ -111,7 +111,14 @@ export default function TransactionsPage() {
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString()
+    const date = new Date(dateString)
+    return date.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
   }
 
   const formatAmount = (amount: number, currency: string) => {
@@ -197,7 +204,7 @@ export default function TransactionsPage() {
         </CardContent>
       </Card>
 
-      {/* Transactions Grid */}
+      {/* Transactions Table */}
       {loading ? (
         <Card>
           <CardContent className="flex items-center justify-center py-12">
@@ -209,59 +216,83 @@ export default function TransactionsPage() {
         </Card>
       ) : transactions.length > 0 ? (
         <>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {transactions.map((transaction) => {
-              const risk = getRiskLevel(transaction.fraud_score)
-              return (
-                <Card key={transaction.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="flex items-center gap-2">
-                          <CreditCard className="h-5 w-5" />
-                          {transaction.id.substring(0, 8)}...
-                        </CardTitle>
-                        <p className="text-sm text-muted-foreground">
-                          {transaction.sender_id.substring(0, 6)}... <ArrowRight className="h-3 w-3 inline" /> {transaction.receiver_id.substring(0, 6)}...
-                        </p>
-                      </div>
-                      <Badge variant={getStatusColor(transaction.status) as any}>
-                        {transaction.status}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm">
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">
-                        {formatAmount(transaction.amount, transaction.currency)}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span>{formatDate(transaction.timestamp)}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span>{transaction.location}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Shield className="h-4 w-4 text-muted-foreground" />
-                      <span>Risk Score: {transaction.fraud_score.toFixed(1)}</span>
-                      <Badge variant={risk.color as any} className="ml-auto">
-                        {risk.level}
-                      </Badge>
-                    </div>
-                    <div className="pt-2">
-                      <Button variant="outline" size="sm" className="w-full">
-                        View Details
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Transaction Details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-3 font-medium">Transaction ID</th>
+                      <th className="text-left p-3 font-medium">Sender</th>
+                      <th className="text-left p-3 font-medium">Receiver</th>
+                      <th className="text-left p-3 font-medium">Amount</th>
+                      <th className="text-left p-3 font-medium">Date</th>
+                      <th className="text-left p-3 font-medium">Location</th>
+                      <th className="text-left p-3 font-medium">Status</th>
+                      <th className="text-left p-3 font-medium">Risk Score</th>
+                      <th className="text-left p-3 font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {transactions.map((transaction) => {
+                      const risk = getRiskLevel(transaction.fraud_score)
+                      return (
+                        <tr key={transaction.id} className="border-b hover:bg-muted/50">
+                          <td className="p-3">
+                            <div className="flex items-center gap-2">
+                              <CreditCard className="h-4 w-4 text-muted-foreground" />
+                              <span className="font-mono text-sm">{transaction.id}</span>
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <span className="font-mono text-sm">{transaction.sender_id}</span>
+                          </td>
+                          <td className="p-3">
+                            <span className="font-mono text-sm">{transaction.receiver_id}</span>
+                          </td>
+                          <td className="p-3">
+                            <span className="font-medium">
+                              {formatAmount(transaction.amount, transaction.currency)}
+                            </span>
+                          </td>
+                          <td className="p-3">
+                            <span className="text-sm">{formatDate(transaction.timestamp)}</span>
+                          </td>
+                          <td className="p-3">
+                            <div className="flex items-center gap-1">
+                              <MapPin className="h-3 w-3 text-muted-foreground" />
+                              <span className="text-sm">{transaction.location}</span>
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <Badge variant={getStatusColor(transaction.status) as any}>
+                              {transaction.status}
+                            </Badge>
+                          </td>
+                          <td className="p-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm">{transaction.fraud_score.toFixed(1)}</span>
+                              <Badge variant={risk.color as any} className="text-xs">
+                                {risk.level}
+                              </Badge>
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <Button variant="outline" size="sm">
+                              View Details
+                            </Button>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Pagination */}
           {totalPages > 1 && (
