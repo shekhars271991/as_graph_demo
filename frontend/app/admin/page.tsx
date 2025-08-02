@@ -44,6 +44,8 @@ interface Transaction {
   timestamp: string
   status: string
   fraud_score: number
+  fraud_status?: string
+  fraud_reason?: string
   fraud_type?: string
   fraud_scenario?: string
   is_fraud?: boolean
@@ -236,7 +238,7 @@ export default function AdminPage() {
         
         setStats(prev => ({
           ...prev,
-          duration: `₹{hours.toString().padStart(2, '0')}:₹{minutes.toString().padStart(2, '0')}:₹{seconds.toString().padStart(2, '0')}`
+          duration: `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
         }))
       }, 1000)
     }
@@ -949,8 +951,8 @@ export default function AdminPage() {
                       </div>
                     </div>
                     
-                    <Badge className={getFraudScoreColor(transaction.fraud_score)}>
-                      {transaction.fraud_score.toFixed(1)}
+                    <Badge className={getFraudScoreColor(transaction.fraud_score || 0)}>
+                      {(transaction.fraud_score || 0).toFixed(1)}
                     </Badge>
                     
                     {transaction.is_fraud && (

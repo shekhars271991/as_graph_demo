@@ -271,6 +271,18 @@ async def search_transactions(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to search transactions: {str(e)}")
 
+@app.get("/transactions/flagged")
+async def get_flagged_transactions(
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(12, ge=1, le=100, description="Number of transactions per page")
+):
+    """Get paginated list of transactions that have been flagged by fraud detection"""
+    try:
+        results = await graph_service.get_flagged_transactions_paginated(page, page_size)
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get flagged transactions: {str(e)}")
+
 @app.post("/fraud-patterns/run")
 async def run_fraud_patterns(patterns: List[str]):
     """Run specific fraud detection patterns"""

@@ -18,6 +18,11 @@ interface Transaction {
   location: string
   status: string
   fraud_score: number
+  fraud_status?: string
+  fraud_reason?: string
+  is_fraud: boolean
+  transaction_type: string
+  merchant: string
   device_id?: string
 }
 
@@ -38,16 +43,21 @@ export default function TransactionsPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [totalTransactions, setTotalTransactions] = useState(0)
   const [pageSize] = useState(12)
+  const [viewMode, setViewMode] = useState<'all' | 'flagged'>('all')
 
-  // Load all transactions on component mount
+  // Load transactions on component mount and when view mode or page changes
   useEffect(() => {
     loadAllTransactions()
-  }, [currentPage])
+  }, [currentPage, viewMode])
 
   const loadAllTransactions = async () => {
     setLoading(true)
     try {
-      const response = await api.get(`/transactions?page=${currentPage}&page_size=${pageSize}`)
+      const endpoint = viewMode === 'flagged' 
+        ? `/transactions/flagged?page=${currentPage}&page_size=${pageSize}`
+        : `/transactions?page=${currentPage}&page_size=${pageSize}`
+      
+      const response = await api.get(endpoint)
       const data: PaginatedTransactions = response.data
       setTransactions(data.transactions || [])
       setTotalPages(data.total_pages || 1)
@@ -131,10 +141,37 @@ export default function TransactionsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Transaction Explorer</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          {viewMode === 'flagged' ? 'Flagged Transactions' : 'Transaction Explorer'}
+        </h1>
         <p className="text-muted-foreground">
-          Search and explore transaction details and patterns
+          {viewMode === 'flagged' 
+            ? 'View transactions that have been flagged by fraud detection'
+            : 'Search and explore transaction details and patterns'
+          }
         </p>
+      </div>
+
+      {/* View Mode Controls */}
+      <div className="flex space-x-2">
+        <Button
+          variant={viewMode === 'all' ? 'default' : 'outline'}
+          onClick={() => {
+            setViewMode('all')
+            setCurrentPage(1)
+          }}
+        >
+          All Transactions
+        </Button>
+        <Button
+          variant={viewMode === 'flagged' ? 'default' : 'outline'}
+          onClick={() => {
+            setViewMode('flagged')
+            setCurrentPage(1)
+          }}
+        >
+          Flagged Transactions
+        </Button>
       </div>
 
       {/* Summary Stats */}
@@ -155,7 +192,7 @@ export default function TransactionsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-destructive">
-              {transactions.filter(t => t.fraud_score >= 75).length}
+              {transactions.filter(t => (t.fraud_score || 0) >= 75).length}
             </div>
           </CardContent>
         </Card>
@@ -166,7 +203,7 @@ export default function TransactionsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-warning">
-              {transactions.filter(t => t.fraud_score >= 50 && t.fraud_score < 75).length}
+              {transactions.filter(t => (t.fraud_score || 0) >= 50 && (t.fraud_score || 0) < 75).length}
             </div>
           </CardContent>
         </Card>
@@ -177,7 +214,7 @@ export default function TransactionsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-success">
-              {transactions.filter(t => t.fraud_score < 50).length}
+              {transactions.filter(t => (t.fraud_score || 0) < 50).length}
             </div>
           </CardContent>
         </Card>
@@ -233,12 +270,13 @@ export default function TransactionsPage() {
                       <th className="text-left p-3 font-medium">Location</th>
                       <th className="text-left p-3 font-medium">Status</th>
                       <th className="text-left p-3 font-medium">Risk Score</th>
+                      <th className="text-left p-3 font-medium">Fraud Status</th>
                       <th className="text-left p-3 font-medium">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {transactions.map((transaction) => {
-                      const risk = getRiskLevel(transaction.fraud_score)
+                      const risk = getRiskLevel(transaction.fraud_score || 0)
                       return (
                         <tr key={transaction.id} className="border-b hover:bg-muted/50">
                           <td className="p-3">
@@ -274,11 +312,36 @@ export default function TransactionsPage() {
                           </td>
                           <td className="p-3">
                             <div className="flex items-center gap-2">
-                              <span className="text-sm">{transaction.fraud_score.toFixed(1)}</span>
+                              <span className="text-sm">{(transaction.fraud_score || 0).toFixed(1)}</span>
                               <Badge variant={risk.color as any} className="text-xs">
                                 {risk.level}
                               </Badge>
                             </div>
+                          </td>
+                          <td className="p-3">
+                            {transaction.fraud_status ? (
+                              <div className="space-y-1">
+                                <Badge 
+                                  variant={
+                                    transaction.fraud_status === 'blocked' ? 'destructive' : 
+                                    transaction.fraud_status === 'review' ? 'secondary' : 
+                                    'default'
+                                  }
+                                  className="text-xs"
+                                >
+                                  {transaction.fraud_status.toUpperCase()}
+                                </Badge>
+                                {transaction.fraud_reason && (
+                                  <div className="text-xs text-muted-foreground">
+                                    {transaction.fraud_reason}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <Badge variant="secondary" className="text-xs">
+                                CLEAN
+                              </Badge>
+                            )}
                           </td>
                           <td className="p-3">
                             <Button variant="outline" size="sm">

@@ -57,6 +57,8 @@ interface Transaction {
   timestamp: string
   status: string
   fraud_score: number
+  fraud_status?: string
+  fraud_reason?: string
   transaction_type?: string
   merchant?: string
   location?: string
@@ -479,7 +481,7 @@ export default function UserDetailPage() {
                           </div>
                                                      <div className="flex items-center gap-2">
                              <Badge variant="secondary" className="text-xs">
-                               Score: {transaction.fraud_score.toFixed(1)}
+                               Score: {(transaction.fraud_score || 0).toFixed(1)}
                              </Badge>
                             <p className="text-xs text-muted-foreground">
                               {formatDateTime(transaction.timestamp)}

@@ -840,6 +840,34 @@ class GraphService:
                             logger.error(f"Error getting receiver account for transaction: {e}")
                             receiver_id = 'Unknown'
                         
+                        # Get fraud check results if any
+                        fraud_score = 0.0
+                        is_fraud = False
+                        fraud_status = None
+                        fraud_reason = None
+                        try:
+                            # Check for fraud check results connected via flagged_by edge
+                            fraud_result_vertices = self.client.V(transaction_vertex).out("flagged_by").to_list()
+                            if fraud_result_vertices:
+                                fraud_result_vertex = fraud_result_vertices[0]  # Get the first fraud result
+                                fraud_result_props = {}
+                                fraud_props_map = self.client.V(fraud_result_vertex).value_map().next()
+                                for key, value in fraud_props_map.items():
+                                    if isinstance(value, list) and len(value) > 0:
+                                        fraud_result_props[key] = value[0]
+                                    else:
+                                        fraud_result_props[key] = value
+                                
+                                fraud_score = fraud_result_props.get('fraud_score', 0.0)
+                                fraud_status = fraud_result_props.get('status', 'clean')
+                                fraud_reason = fraud_result_props.get('reason', '')
+                                is_fraud = fraud_score >= 75  # Consider score >= 75 as fraud
+                                
+                                logger.info(f"Found fraud result for transaction {transaction_props.get('transaction_id', 'unknown')}: score={fraud_score}, status={fraud_status}")
+                        except Exception as e:
+                            logger.debug(f"No fraud results found for transaction {transaction_props.get('transaction_id', 'unknown')}: {e}")
+                            # No fraud results found, use defaults
+                        
                         transactions_data.append({
                             'id': transaction_props.get('transaction_id', ''),
                             'sender_id': sender_id,
@@ -849,10 +877,12 @@ class GraphService:
                             'timestamp': transaction_props.get('timestamp', ''),
                             'location': transaction_props.get('location', 'Unknown'),
                             'status': transaction_props.get('status', 'completed'),
-                            'fraud_score': transaction_props.get('fraud_score', 0.0),
+                            'fraud_score': fraud_score,
                             'transaction_type': transaction_props.get('type', 'transfer'),
                             'merchant': transaction_props.get('merchant', 'Unknown'),
-                            'is_fraud': transaction_props.get('is_fraud', False),
+                            'is_fraud': is_fraud,
+                            'fraud_status': fraud_status,
+                            'fraud_reason': fraud_reason,
                             'device_id': None
                         })
                     except Exception as e:
@@ -1272,6 +1302,136 @@ class GraphService:
         except Exception as e:
             logger.error(f"Error in get_flagged_accounts: {e}")
             return []
+
+    async def get_flagged_transactions_paginated(self, page: int, page_size: int) -> Dict[str, Any]:
+        """Get paginated list of transactions that have been flagged by fraud detection"""
+        try:
+            if not self.client:
+                raise Exception("Graph client not available")
+            
+            loop = asyncio.get_event_loop()
+            
+            def get_flagged_transactions_sync():
+                try:
+                    # Get all transactions that have flagged_by edges (connected to FraudCheckResult vertices)
+                    flagged_transaction_vertices = self.client.V().has_label("transaction").out("flagged_by").in_("flagged_by").dedup().to_list()
+                    
+                    # Paginate
+                    start_idx = (page - 1) * page_size
+                    end_idx = start_idx + page_size
+                    paginated_transactions = flagged_transaction_vertices[start_idx:end_idx]
+                    
+                    transactions_data = []
+                    for transaction_vertex in paginated_transactions:
+                        # Get transaction properties
+                        transaction_props = {}
+                        props = self.client.V(transaction_vertex).value_map().next()
+                        for key, value in props.items():
+                            if isinstance(value, list) and len(value) > 0:
+                                transaction_props[key] = value[0]
+                            else:
+                                transaction_props[key] = value
+                        
+                        # Get sender account
+                        sender_id = 'Unknown'
+                        try:
+                            sender_account_vertices = self.client.V(transaction_vertex).in_("TRANSFERS_TO").to_list()
+                            if sender_account_vertices:
+                                sender_account_props = {}
+                                sender_acc_prop_map = self.client.V(sender_account_vertices[0]).value_map().next()
+                                for key, value in sender_acc_prop_map.items():
+                                    if isinstance(value, list) and len(value) > 0:
+                                        sender_account_props[key] = value[0]
+                                    else:
+                                        sender_account_props[key] = value
+                                sender_id = sender_account_props.get('account_id', 'Unknown')
+                        except Exception as e:
+                            logger.debug(f"Error getting sender account: {e}")
+                        
+                        # Get receiver account
+                        receiver_id = 'Unknown'
+                        try:
+                            receiver_account_vertices = self.client.V(transaction_vertex).out("TRANSFERS_FROM").to_list()
+                            if receiver_account_vertices:
+                                receiver_account_props = {}
+                                receiver_acc_prop_map = self.client.V(receiver_account_vertices[0]).value_map().next()
+                                for key, value in receiver_acc_prop_map.items():
+                                    if isinstance(value, list) and len(value) > 0:
+                                        receiver_account_props[key] = value[0]
+                                    else:
+                                        receiver_account_props[key] = value
+                                receiver_id = receiver_account_props.get('account_id', 'Unknown')
+                        except Exception as e:
+                            logger.debug(f"Error getting receiver account: {e}")
+                        
+                        # Get fraud check results
+                        fraud_score = 0.0
+                        fraud_status = 'unknown'
+                        fraud_reason = ''
+                        try:
+                            fraud_result_vertices = self.client.V(transaction_vertex).out("flagged_by").to_list()
+                            if fraud_result_vertices:
+                                fraud_result_props = {}
+                                fraud_props_map = self.client.V(fraud_result_vertices[0]).value_map().next()
+                                for key, value in fraud_props_map.items():
+                                    if isinstance(value, list) and len(value) > 0:
+                                        fraud_result_props[key] = value[0]
+                                    else:
+                                        fraud_result_props[key] = value
+                                
+                                fraud_score = fraud_result_props.get('fraud_score', 0.0)
+                                fraud_status = fraud_result_props.get('status', 'unknown')
+                                fraud_reason = fraud_result_props.get('reason', '')
+                        except Exception as e:
+                            logger.debug(f"Error getting fraud results: {e}")
+                        
+                        transactions_data.append({
+                            'id': transaction_props.get('transaction_id', ''),
+                            'sender_id': sender_id,
+                            'receiver_id': receiver_id,
+                            'amount': transaction_props.get('amount', 0.0),
+                            'currency': 'USD',
+                            'timestamp': transaction_props.get('timestamp', ''),
+                            'location': transaction_props.get('location', 'Unknown'),
+                            'status': transaction_props.get('status', 'completed'),
+                            'fraud_score': fraud_score,
+                            'transaction_type': transaction_props.get('type', 'transfer'),
+                            'merchant': transaction_props.get('merchant', 'Unknown'),
+                            'is_fraud': fraud_score >= 75,
+                            'fraud_status': fraud_status,
+                            'fraud_reason': fraud_reason,
+                            'device_id': None
+                        })
+                    
+                    return {
+                        'transactions': transactions_data,
+                        'total': len(flagged_transaction_vertices),
+                        'page': page,
+                        'page_size': page_size,
+                        'total_pages': (len(flagged_transaction_vertices) + page_size - 1) // page_size
+                    }
+                    
+                except Exception as e:
+                    logger.error(f"Error getting flagged transactions: {e}")
+                    return {
+                        'transactions': [],
+                        'total': 0,
+                        'page': page,
+                        'page_size': page_size,
+                        'total_pages': 0
+                    }
+            
+            return await loop.run_in_executor(None, get_flagged_transactions_sync)
+            
+        except Exception as e:
+            logger.error(f"Error in get_flagged_transactions_paginated: {e}")
+            return {
+                'transactions': [],
+                'total': 0,
+                'page': page,
+                'page_size': page_size,
+                'total_pages': 0
+            }
 
     async def create_transfer_relationship(self, from_account_id: str, to_account_id: str, amount: float) -> bool:
         """Create a TRANSFERS_TO edge between accounts"""
