@@ -161,7 +161,7 @@ class GraphService:
                     for account_data in user_data.get('accounts', []):
                         try:
                             def create_account():
-                                return self.client.add_v("account").property("account_id", account_data['id']).property("type", account_data['type']).property("balance", account_data['balance']).property("status", "active").property("bank_name", "Demo Bank").property("created_date", account_data['created_date']).next()
+                                return self.client.add_v("account").property("account_id", account_data['id']).property("type", account_data['type']).property("balance", account_data['balance']).property("status", "active").property("bank_name", "Demo Bank").property("created_date", account_data['created_date']).property("fraudFlag", account_data.get('fraudFlag', False)).next()
                             
                             account_vertex = await loop.run_in_executor(None, create_account)
                             accounts_created += 1
@@ -1126,6 +1126,8 @@ class GraphService:
                                     "bank_name", "Demo Bank"
                                 ).property(
                                     "created_date", account_data['created_date']
+                                ).property(
+                                    "fraudFlag", account_data.get('fraudFlag', False)
                                 ).next()
                             
                             account_vertex = await loop.run_in_executor(None, create_account)

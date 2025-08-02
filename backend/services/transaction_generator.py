@@ -355,15 +355,15 @@ class TransactionGeneratorService:
                     
                     flagged_connections = []
                     
-                    # Check sender account connections to flagged accounts (1-hop direct TRANSFERS_TO)
+                    # Check sender account connections to flagged accounts (via transactions to receiver accounts)
                     if sender_account_id and sender_account_id != 'unknown':
-                        sender_flagged = self.graph_service.client.V().has_label("account").has("account_id", sender_account_id).out("TRANSFERS_TO").has_label("account").has("fraudFlag", True).to_list()
+                        sender_flagged = self.graph_service.client.V().has_label("account").has("account_id", sender_account_id).out("TRANSFERS_TO").out("TRANSFERS_FROM").has("fraudFlag", True).to_list()
                         if sender_flagged:
                             flagged_connections.append({"account": sender_account_id, "role": "sender", "flagged_connections": len(sender_flagged)})
                     
-                    # Check receiver account connections to flagged accounts (1-hop direct TRANSFERS_TO)
+                    # Check receiver account connections to flagged accounts (via transactions to receiver accounts)
                     if receiver_account_id and receiver_account_id != 'unknown':
-                        receiver_flagged = self.graph_service.client.V().has_label("account").has("account_id", receiver_account_id).out("TRANSFERS_TO").has_label("account").has("fraudFlag", True).to_list()
+                        receiver_flagged = self.graph_service.client.V().has_label("account").has("account_id", receiver_account_id).out("TRANSFERS_TO").out("TRANSFERS_FROM").has("fraudFlag", True).to_list()
                         if receiver_flagged:
                             flagged_connections.append({"account": receiver_account_id, "role": "receiver", "flagged_connections": len(receiver_flagged)})
                     
@@ -377,8 +377,8 @@ class TransactionGeneratorService:
             
             # If flagged connections found, create fraud check result
             if flagged_connections:
-                fraud_score = min(90 + len(flagged_connections) * 5, 100)  # Score 90-100 based on number of connections
-                status = "blocked" if fraud_score >= 95 else "review"
+                fraud_score = min(10 + len(flagged_connections) * 5, 100)  # Score 90-100 based on number of connections
+                status = "blocked" if fraud_score >= 85 else "review"
                 reason = f"Connected to {len(flagged_connections)} flagged account(s)"
                 
                 await self._create_fraud_check_result(transaction, fraud_score, status, reason, flagged_connections)

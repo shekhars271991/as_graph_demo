@@ -75,8 +75,7 @@
           "id": "A00007",
           "type": "savings",
           "balance": 141102.06,
-          "created_date": "2024-03-08T11:36:00Z",
-          "fraudFlag": true
+          "created_date": "2024-03-08T11:36:00Z"
         },
         {
           "id": "A00008",
@@ -102,8 +101,7 @@
           "id": "A00009",
           "type": "savings",
           "balance": 134466.87,
-          "created_date": "2023-12-19T20:36:00Z",
-          "fraudFlag": true
+          "created_date": "2023-12-19T20:36:00Z"
         },
         {
           "id": "A00010",
@@ -129,8 +127,7 @@
           "id": "A00011",
           "type": "savings",
           "balance": 310404.32,
-          "created_date": "2023-10-28T21:27:00Z",
-          "fraudFlag": true
+          "created_date": "2023-10-28T21:27:00Z"
         }
       ]
     },
@@ -169,15 +166,13 @@
           "id": "A00015",
           "type": "savings",
           "balance": 186979.94,
-          "created_date": "2024-01-09T05:33:00Z",
-          "fraudFlag": true
+          "created_date": "2024-01-09T05:33:00Z"
         },
         {
           "id": "A00016",
           "type": "credit",
           "balance": -30362.89,
-          "created_date": "2024-01-09T05:33:00Z",
-          "fraudFlag": true
+          "created_date": "2024-01-09T05:33:00Z"
         }
       ]
     },
@@ -196,15 +191,13 @@
           "id": "A00017",
           "type": "savings",
           "balance": 232743.33,
-          "created_date": "2023-09-08T05:34:00Z",
-          "fraudFlag": true
+          "created_date": "2023-09-08T05:34:00Z"
         },
         {
           "id": "A00018",
           "type": "credit",
           "balance": -92912.16,
-          "created_date": "2023-09-08T05:34:00Z",
-          "fraudFlag": true
+          "created_date": "2023-09-08T05:34:00Z"
         }
       ]
     },
@@ -223,8 +216,7 @@
           "id": "A00019",
           "type": "savings",
           "balance": 411435.89,
-          "created_date": "2023-02-27T07:49:00Z",
-          "fraudFlag": true
+          "created_date": "2023-02-27T07:49:00Z"
         }
       ]
     },
@@ -243,15 +235,13 @@
           "id": "A00021",
           "type": "savings",
           "balance": 108675.39,
-          "created_date": "2024-08-03T10:44:00Z",
-          "fraudFlag": true
+          "created_date": "2024-08-03T10:44:00Z"
         },
         {
           "id": "A00022",
           "type": "credit",
           "balance": -89044.9,
-          "created_date": "2024-08-03T10:44:00Z",
-          "fraudFlag": true
+          "created_date": "2024-08-03T10:44:00Z"
         }
       ]
     },
@@ -270,8 +260,7 @@
           "id": "A00023",
           "type": "savings",
           "balance": 133582.58,
-          "created_date": "2024-07-28T18:23:00Z",
-          "fraudFlag": true
+          "created_date": "2024-07-28T18:23:00Z"
         }
       ]
     },
@@ -310,15 +299,13 @@
           "id": "A00027",
           "type": "savings",
           "balance": 34573.27,
-          "created_date": "2024-03-08T20:21:00Z",
-          "fraudFlag": true
+          "created_date": "2024-03-08T20:21:00Z"
         },
         {
           "id": "A00028",
           "type": "credit",
           "balance": -99631.53,
-          "created_date": "2024-03-08T20:21:00Z",
-          "fraudFlag": true
+          "created_date": "2024-03-08T20:21:00Z"
         }
       ]
     },
@@ -337,8 +324,7 @@
           "id": "A00029",
           "type": "savings",
           "balance": 361198.74,
-          "created_date": "2023-01-12T23:13:00Z",
-          "fraudFlag": true
+          "created_date": "2023-01-12T23:13:00Z"
         }
       ]
     },
@@ -357,15 +343,13 @@
           "id": "A00031",
           "type": "savings",
           "balance": 148869.56,
-          "created_date": "2023-12-15T03:48:00Z",
-          "fraudFlag": true
+          "created_date": "2023-12-15T03:48:00Z"
         },
         {
           "id": "A00032",
           "type": "credit",
           "balance": -5308.31,
-          "created_date": "2023-12-15T03:48:00Z",
-          "fraudFlag": true
+          "created_date": "2023-12-15T03:48:00Z"
         }
       ]
     },
@@ -384,8 +368,7 @@
           "id": "A00033",
           "type": "savings",
           "balance": 151327.06,
-          "created_date": "2023-04-19T21:20:00Z",
-          "fraudFlag": true
+          "created_date": "2023-04-19T21:20:00Z"
         }
       ]
     },
@@ -404,8 +387,7 @@
           "id": "A00035",
           "type": "savings",
           "balance": 476889.37,
-          "created_date": "2023-06-15T18:24:00Z",
-          "fraudFlag": true
+          "created_date": "2023-06-15T18:24:00Z"
         }
       ]
     },
@@ -424,8 +406,7 @@
           "id": "A00037",
           "type": "savings",
           "balance": 439724.77,
-          "created_date": "2023-04-25T12:23:00Z",
-          "fraudFlag": true
+          "created_date": "2023-04-25T12:23:00Z"
         }
       ]
     },
@@ -444,15 +425,13 @@
           "id": "A00039",
           "type": "savings",
           "balance": 45569.77,
-          "created_date": "2024-08-03T02:41:00Z",
-          "fraudFlag": true
+          "created_date": "2024-08-03T02:41:00Z"
         },
         {
           "id": "A00040",
           "type": "credit",
           "balance": -11575.19,
-          "created_date": "2024-08-03T02:41:00Z",
-          "fraudFlag": true
+          "created_date": "2024-08-03T02:41:00Z"
         }
       ]
     },
@@ -471,8 +450,7 @@
           "id": "A00041",
           "type": "savings",
           "balance": 85068.1,
-          "created_date": "2024-05-01T18:45:00Z",
-          "fraudFlag": true
+          "created_date": "2024-05-01T18:45:00Z"
         }
       ]
     },
@@ -491,8 +469,7 @@
           "id": "A00043",
           "type": "savings",
           "balance": 201299.17,
-          "created_date": "2023-07-25T10:38:00Z",
-          "fraudFlag": true
+          "created_date": "2023-07-25T10:38:00Z"
         }
       ]
     },
@@ -518,8 +495,7 @@
           "id": "A00046",
           "type": "credit",
           "balance": -60889.33,
-          "created_date": "2023-05-04T08:27:00Z",
-          "fraudFlag": true
+          "created_date": "2023-05-04T08:27:00Z"
         }
       ]
     },
@@ -538,15 +514,13 @@
           "id": "A00047",
           "type": "savings",
           "balance": 36497.96,
-          "created_date": "2023-03-02T07:48:00Z",
-          "fraudFlag": true
+          "created_date": "2023-03-02T07:48:00Z"
         },
         {
           "id": "A00048",
           "type": "credit",
           "balance": -36390.71,
-          "created_date": "2023-03-02T07:48:00Z",
-          "fraudFlag": true
+          "created_date": "2023-03-02T07:48:00Z"
         }
       ]
     },
@@ -565,8 +539,7 @@
           "id": "A00049",
           "type": "savings",
           "balance": 68758.99,
-          "created_date": "2023-08-08T18:24:00Z",
-          "fraudFlag": true
+          "created_date": "2023-08-08T18:24:00Z"
         }
       ]
     },
@@ -585,15 +558,13 @@
           "id": "A00051",
           "type": "savings",
           "balance": 97633.73,
-          "created_date": "2024-04-29T13:53:00Z",
-          "fraudFlag": true
+          "created_date": "2024-04-29T13:53:00Z"
         },
         {
           "id": "A00052",
           "type": "credit",
           "balance": -45949.86,
-          "created_date": "2024-04-29T13:53:00Z",
-          "fraudFlag": true
+          "created_date": "2024-04-29T13:53:00Z"
         }
       ]
     },
@@ -612,8 +583,7 @@
           "id": "A00053",
           "type": "savings",
           "balance": 327767.38,
-          "created_date": "2023-02-25T22:59:00Z",
-          "fraudFlag": true
+          "created_date": "2023-02-25T22:59:00Z"
         }
       ]
     },
@@ -632,8 +602,7 @@
           "id": "A00055",
           "type": "savings",
           "balance": 98220.27,
-          "created_date": "2023-04-22T08:29:00Z",
-          "fraudFlag": true
+          "created_date": "2023-04-22T08:29:00Z"
         }
       ]
     },
@@ -652,8 +621,7 @@
           "id": "A00057",
           "type": "savings",
           "balance": 223235.98,
-          "created_date": "2023-09-13T02:34:00Z",
-          "fraudFlag": true
+          "created_date": "2023-09-13T02:34:00Z"
         }
       ]
     },
@@ -672,8 +640,7 @@
           "id": "A00059",
           "type": "savings",
           "balance": 484591.14,
-          "created_date": "2024-07-07T00:30:00Z",
-          "fraudFlag": true
+          "created_date": "2024-07-07T00:30:00Z"
         }
       ]
     },
@@ -692,15 +659,13 @@
           "id": "A00061",
           "type": "savings",
           "balance": 451514.1,
-          "created_date": "2023-08-07T13:41:00Z",
-          "fraudFlag": true
+          "created_date": "2023-08-07T13:41:00Z"
         },
         {
           "id": "A00062",
           "type": "credit",
           "balance": -5204.76,
-          "created_date": "2023-08-07T13:41:00Z",
-          "fraudFlag": true
+          "created_date": "2023-08-07T13:41:00Z"
         }
       ]
     },
@@ -719,8 +684,7 @@
           "id": "A00063",
           "type": "savings",
           "balance": 213234.72,
-          "created_date": "2024-04-10T09:44:00Z",
-          "fraudFlag": true
+          "created_date": "2024-04-10T09:44:00Z"
         }
       ]
     },
@@ -739,15 +703,13 @@
           "id": "A00065",
           "type": "savings",
           "balance": 111197.35,
-          "created_date": "2023-07-14T10:07:00Z",
-          "fraudFlag": true
+          "created_date": "2023-07-14T10:07:00Z"
         },
         {
           "id": "A00066",
           "type": "credit",
           "balance": -74895.03,
-          "created_date": "2023-07-14T10:07:00Z",
-          "fraudFlag": true
+          "created_date": "2023-07-14T10:07:00Z"
         }
       ]
     },
@@ -766,8 +728,7 @@
           "id": "A00067",
           "type": "savings",
           "balance": 252916.64,
-          "created_date": "2024-08-21T16:16:00Z",
-          "fraudFlag": true
+          "created_date": "2024-08-21T16:16:00Z"
         }
       ]
     },
@@ -786,8 +747,7 @@
           "id": "A00069",
           "type": "savings",
           "balance": 298732.45,
-          "created_date": "2023-07-10T02:20:00Z",
-          "fraudFlag": true
+          "created_date": "2023-07-10T02:20:00Z"
         }
       ]
     },
@@ -806,15 +766,13 @@
           "id": "A00071",
           "type": "savings",
           "balance": 290722.77,
-          "created_date": "2024-08-06T08:24:00Z",
-          "fraudFlag": true
+          "created_date": "2024-08-06T08:24:00Z"
         },
         {
           "id": "A00072",
           "type": "credit",
           "balance": -12788.42,
-          "created_date": "2024-08-06T08:24:00Z",
-          "fraudFlag": true
+          "created_date": "2024-08-06T08:24:00Z"
         }
       ]
     },
@@ -833,15 +791,13 @@
           "id": "A00073",
           "type": "savings",
           "balance": 335853.81,
-          "created_date": "2023-09-25T06:58:00Z",
-          "fraudFlag": true
+          "created_date": "2023-09-25T06:58:00Z"
         },
         {
           "id": "A00074",
           "type": "credit",
           "balance": -30233.38,
-          "created_date": "2023-09-25T06:58:00Z",
-          "fraudFlag": true
+          "created_date": "2023-09-25T06:58:00Z"
         }
       ]
     },
@@ -860,8 +816,7 @@
           "id": "A00075",
           "type": "savings",
           "balance": 7629.78,
-          "created_date": "2023-11-20T02:28:00Z",
-          "fraudFlag": true
+          "created_date": "2023-11-20T02:28:00Z"
         }
       ]
     },
@@ -880,15 +835,13 @@
           "id": "A00077",
           "type": "savings",
           "balance": 68830.92,
-          "created_date": "2024-06-02T09:03:00Z",
-          "fraudFlag": true
+          "created_date": "2024-06-02T09:03:00Z"
         },
         {
           "id": "A00078",
           "type": "credit",
           "balance": -11535.17,
-          "created_date": "2024-06-02T09:03:00Z",
-          "fraudFlag": true
+          "created_date": "2024-06-02T09:03:00Z"
         }
       ]
     },
@@ -907,8 +860,7 @@
           "id": "A00079",
           "type": "savings",
           "balance": 153351.02,
-          "created_date": "2024-07-11T00:00:00Z",
-          "fraudFlag": true
+          "created_date": "2024-07-11T00:00:00Z"
         }
       ]
     },
@@ -927,8 +879,7 @@
           "id": "A00081",
           "type": "savings",
           "balance": 54482.49,
-          "created_date": "2023-11-03T22:38:00Z",
-          "fraudFlag": true
+          "created_date": "2023-11-03T22:38:00Z"
         }
       ]
     },
@@ -947,8 +898,7 @@
           "id": "A00083",
           "type": "savings",
           "balance": 138357.06,
-          "created_date": "2024-07-20T05:18:00Z",
-          "fraudFlag": true
+          "created_date": "2024-07-20T05:18:00Z"
         }
       ]
     },
@@ -967,8 +917,7 @@
           "id": "A00085",
           "type": "savings",
           "balance": 245800.33,
-          "created_date": "2023-09-28T17:15:00Z",
-          "fraudFlag": true
+          "created_date": "2023-09-28T17:15:00Z"
         }
       ]
     },
@@ -987,8 +936,7 @@
           "id": "A00087",
           "type": "savings",
           "balance": 4762.21,
-          "created_date": "2023-10-11T01:30:00Z",
-          "fraudFlag": true
+          "created_date": "2023-10-11T01:30:00Z"
         }
       ]
     },
@@ -1007,15 +955,13 @@
           "id": "A00089",
           "type": "savings",
           "balance": 7805.84,
-          "created_date": "2024-03-13T19:08:00Z",
-          "fraudFlag": true
+          "created_date": "2024-03-13T19:08:00Z"
         },
         {
           "id": "A00090",
           "type": "credit",
           "balance": -88895.11,
-          "created_date": "2024-03-13T19:08:00Z",
-          "fraudFlag": true
+          "created_date": "2024-03-13T19:08:00Z"
         }
       ]
     },
@@ -1034,15 +980,13 @@
           "id": "A00091",
           "type": "savings",
           "balance": 76602.61,
-          "created_date": "2024-08-19T18:51:00Z",
-          "fraudFlag": true
+          "created_date": "2024-08-19T18:51:00Z"
         },
         {
           "id": "A00092",
           "type": "credit",
           "balance": -34284.54,
-          "created_date": "2024-08-19T18:51:00Z",
-          "fraudFlag": true
+          "created_date": "2024-08-19T18:51:00Z"
         }
       ]
     },
@@ -1061,8 +1005,7 @@
           "id": "A00093",
           "type": "savings",
           "balance": 54088.43,
-          "created_date": "2023-09-13T22:45:00Z",
-          "fraudFlag": true
+          "created_date": "2023-09-13T22:45:00Z"
         }
       ]
     },
@@ -1081,8 +1024,7 @@
           "id": "A00095",
           "type": "savings",
           "balance": 488174.4,
-          "created_date": "2023-08-31T05:32:00Z",
-          "fraudFlag": true
+          "created_date": "2023-08-31T05:32:00Z"
         }
       ]
     },
@@ -1101,8 +1043,7 @@
           "id": "A00097",
           "type": "savings",
           "balance": 401710.86,
-          "created_date": "2023-12-07T14:03:00Z",
-          "fraudFlag": true
+          "created_date": "2023-12-07T14:03:00Z"
         }
       ]
     },
@@ -1121,8 +1062,7 @@
           "id": "A00099",
           "type": "savings",
           "balance": 436466.89,
-          "created_date": "2023-04-21T13:03:00Z",
-          "fraudFlag": true
+          "created_date": "2023-04-21T13:03:00Z"
         }
       ]
     },
@@ -1141,8 +1081,7 @@
           "id": "A00101",
           "type": "savings",
           "balance": 410806.58,
-          "created_date": "2023-12-25T10:25:00Z",
-          "fraudFlag": true
+          "created_date": "2023-12-25T10:25:00Z"
         }
       ]
     },
@@ -1161,8 +1100,7 @@
           "id": "A00103",
           "type": "savings",
           "balance": 432583.41,
-          "created_date": "2023-12-03T09:30:00Z",
-          "fraudFlag": true
+          "created_date": "2023-12-03T09:30:00Z"
         }
       ]
     },
@@ -1181,15 +1119,13 @@
           "id": "A00105",
           "type": "savings",
           "balance": 469800.86,
-          "created_date": "2024-07-03T11:18:00Z",
-          "fraudFlag": true
+          "created_date": "2024-07-03T11:18:00Z"
         },
         {
           "id": "A00106",
           "type": "credit",
           "balance": -97188.06,
-          "created_date": "2024-07-03T11:18:00Z",
-          "fraudFlag": true
+          "created_date": "2024-07-03T11:18:00Z"
         }
       ]
     },
@@ -1208,15 +1144,13 @@
           "id": "A00107",
           "type": "savings",
           "balance": 365086.9,
-          "created_date": "2024-03-20T11:47:00Z",
-          "fraudFlag": true
+          "created_date": "2024-03-20T11:47:00Z"
         },
         {
           "id": "A00108",
           "type": "credit",
           "balance": -62589.84,
-          "created_date": "2024-03-20T11:47:00Z",
-          "fraudFlag": true
+          "created_date": "2024-03-20T11:47:00Z"
         }
       ]
     },
@@ -1235,15 +1169,13 @@
           "id": "A00109",
           "type": "savings",
           "balance": 25060.11,
-          "created_date": "2023-07-14T08:41:00Z",
-          "fraudFlag": true
+          "created_date": "2023-07-14T08:41:00Z"
         },
         {
           "id": "A00110",
           "type": "credit",
           "balance": -54392.43,
-          "created_date": "2023-07-14T08:41:00Z",
-          "fraudFlag": true
+          "created_date": "2023-07-14T08:41:00Z"
         }
       ]
     },
@@ -1262,8 +1194,7 @@
           "id": "A00111",
           "type": "savings",
           "balance": 217354.81,
-          "created_date": "2023-07-21T12:25:00Z",
-          "fraudFlag": true
+          "created_date": "2023-07-21T12:25:00Z"
         }
       ]
     },
@@ -1282,8 +1213,7 @@
           "id": "A00113",
           "type": "savings",
           "balance": 255039.88,
-          "created_date": "2023-05-08T10:15:00Z",
-          "fraudFlag": true
+          "created_date": "2023-05-08T10:15:00Z"
         }
       ]
     },
@@ -1302,8 +1232,7 @@
           "id": "A00115",
           "type": "savings",
           "balance": 211961.83,
-          "created_date": "2023-05-11T06:32:00Z",
-          "fraudFlag": true
+          "created_date": "2023-05-11T06:32:00Z"
         }
       ]
     },
@@ -1322,15 +1251,13 @@
           "id": "A00117",
           "type": "savings",
           "balance": 154025.85,
-          "created_date": "2024-07-15T00:00:00Z",
-          "fraudFlag": true
+          "created_date": "2024-07-15T00:00:00Z"
         },
         {
           "id": "A00118",
           "type": "credit",
           "balance": -79647.09,
-          "created_date": "2024-07-15T00:00:00Z",
-          "fraudFlag": true
+          "created_date": "2024-07-15T00:00:00Z"
         }
       ]
     },
@@ -1349,15 +1276,13 @@
           "id": "A00119",
           "type": "savings",
           "balance": 109209.6,
-          "created_date": "2024-03-28T23:03:00Z",
-          "fraudFlag": true
+          "created_date": "2024-03-28T23:03:00Z"
         },
         {
           "id": "A00120",
           "type": "credit",
           "balance": -90612.18,
-          "created_date": "2024-03-28T23:03:00Z",
-          "fraudFlag": true
+          "created_date": "2024-03-28T23:03:00Z"
         }
       ]
     },
@@ -1376,8 +1301,7 @@
           "id": "A00121",
           "type": "savings",
           "balance": 409756.46,
-          "created_date": "2023-12-10T03:11:00Z",
-          "fraudFlag": true
+          "created_date": "2023-12-10T03:11:00Z"
         }
       ]
     },
@@ -1396,15 +1320,13 @@
           "id": "A00123",
           "type": "savings",
           "balance": 124686.74,
-          "created_date": "2023-01-26T01:34:00Z",
-          "fraudFlag": true
+          "created_date": "2023-01-26T01:34:00Z"
         },
         {
           "id": "A00124",
           "type": "credit",
           "balance": -85725.08,
-          "created_date": "2023-01-26T01:34:00Z",
-          "fraudFlag": true
+          "created_date": "2023-01-26T01:34:00Z"
         }
       ]
     },
@@ -1423,15 +1345,13 @@
           "id": "A00125",
           "type": "savings",
           "balance": 360017.92,
-          "created_date": "2024-08-12T06:38:00Z",
-          "fraudFlag": true
+          "created_date": "2024-08-12T06:38:00Z"
         },
         {
           "id": "A00126",
           "type": "credit",
           "balance": -42967.02,
-          "created_date": "2024-08-12T06:38:00Z",
-          "fraudFlag": true
+          "created_date": "2024-08-12T06:38:00Z"
         }
       ]
     },
@@ -1450,8 +1370,7 @@
           "id": "A00127",
           "type": "savings",
           "balance": 111764.04,
-          "created_date": "2023-04-20T14:30:00Z",
-          "fraudFlag": true
+          "created_date": "2023-04-20T14:30:00Z"
         }
       ]
     },
@@ -1470,15 +1389,13 @@
           "id": "A00129",
           "type": "savings",
           "balance": 69269.54,
-          "created_date": "2023-05-05T15:34:00Z",
-          "fraudFlag": true
+          "created_date": "2023-05-05T15:34:00Z"
         },
         {
           "id": "A00130",
           "type": "credit",
           "balance": -55457.53,
-          "created_date": "2023-05-05T15:34:00Z",
-          "fraudFlag": true
+          "created_date": "2023-05-05T15:34:00Z"
         }
       ]
     },
@@ -1497,8 +1414,7 @@
           "id": "A00131",
           "type": "savings",
           "balance": 408058.23,
-          "created_date": "2024-03-29T20:54:00Z",
-          "fraudFlag": true
+          "created_date": "2024-03-29T20:54:00Z"
         }
       ]
     },
@@ -1517,8 +1433,7 @@
           "id": "A00133",
           "type": "savings",
           "balance": 226684.67,
-          "created_date": "2023-06-12T16:12:00Z",
-          "fraudFlag": true
+          "created_date": "2023-06-12T16:12:00Z"
         }
       ]
     },
@@ -1537,8 +1452,7 @@
           "id": "A00135",
           "type": "savings",
           "balance": 221616.68,
-          "created_date": "2023-09-02T09:22:00Z",
-          "fraudFlag": true
+          "created_date": "2023-09-02T09:22:00Z"
         }
       ]
     },
@@ -1557,15 +1471,13 @@
           "id": "A00137",
           "type": "savings",
           "balance": 71771.91,
-          "created_date": "2024-07-07T02:45:00Z",
-          "fraudFlag": true
+          "created_date": "2024-07-07T02:45:00Z"
         },
         {
           "id": "A00138",
           "type": "credit",
           "balance": -70925.23,
-          "created_date": "2024-07-07T02:45:00Z",
-          "fraudFlag": true
+          "created_date": "2024-07-07T02:45:00Z"
         }
       ]
     },
@@ -1584,15 +1496,13 @@
           "id": "A00139",
           "type": "savings",
           "balance": 209639.79,
-          "created_date": "2024-07-09T15:54:00Z",
-          "fraudFlag": true
+          "created_date": "2024-07-09T15:54:00Z"
         },
         {
           "id": "A00140",
           "type": "credit",
           "balance": -44913.63,
-          "created_date": "2024-07-09T15:54:00Z",
-          "fraudFlag": true
+          "created_date": "2024-07-09T15:54:00Z"
         }
       ]
     },
@@ -1611,8 +1521,7 @@
           "id": "A00141",
           "type": "savings",
           "balance": 240058.93,
-          "created_date": "2024-08-12T12:59:00Z",
-          "fraudFlag": true
+          "created_date": "2024-08-12T12:59:00Z"
         }
       ]
     },
@@ -1631,8 +1540,7 @@
           "id": "A00143",
           "type": "savings",
           "balance": 374515.29,
-          "created_date": "2024-03-05T18:22:00Z",
-          "fraudFlag": true
+          "created_date": "2024-03-05T18:22:00Z"
         }
       ]
     },
@@ -1651,15 +1559,13 @@
           "id": "A00145",
           "type": "savings",
           "balance": 244364.07,
-          "created_date": "2023-10-07T14:52:00Z",
-          "fraudFlag": true
+          "created_date": "2023-10-07T14:52:00Z"
         },
         {
           "id": "A00146",
           "type": "credit",
           "balance": -68542.99,
-          "created_date": "2023-10-07T14:52:00Z",
-          "fraudFlag": true
+          "created_date": "2023-10-07T14:52:00Z"
         }
       ]
     },
@@ -1678,8 +1584,7 @@
           "id": "A00147",
           "type": "savings",
           "balance": 268459.44,
-          "created_date": "2023-05-11T21:14:00Z",
-          "fraudFlag": true
+          "created_date": "2023-05-11T21:14:00Z"
         }
       ]
     },
@@ -1698,15 +1603,13 @@
           "id": "A00149",
           "type": "savings",
           "balance": 433825.12,
-          "created_date": "2024-03-14T04:37:00Z",
-          "fraudFlag": true
+          "created_date": "2024-03-14T04:37:00Z"
         },
         {
           "id": "A00150",
           "type": "credit",
           "balance": -29714.85,
-          "created_date": "2024-03-14T04:37:00Z",
-          "fraudFlag": true
+          "created_date": "2024-03-14T04:37:00Z"
         }
       ]
     },
@@ -1725,8 +1628,7 @@
           "id": "A00151",
           "type": "savings",
           "balance": 376748.88,
-          "created_date": "2024-01-24T09:29:00Z",
-          "fraudFlag": true
+          "created_date": "2024-01-24T09:29:00Z"
         }
       ]
     },
@@ -1745,15 +1647,13 @@
           "id": "A00153",
           "type": "savings",
           "balance": 499954.19,
-          "created_date": "2024-07-06T01:46:00Z",
-          "fraudFlag": true
+          "created_date": "2024-07-06T01:46:00Z"
         },
         {
           "id": "A00154",
           "type": "credit",
           "balance": -66763.69,
-          "created_date": "2024-07-06T01:46:00Z",
-          "fraudFlag": true
+          "created_date": "2024-07-06T01:46:00Z"
         }
       ]
     },
@@ -1772,15 +1672,13 @@
           "id": "A00155",
           "type": "savings",
           "balance": 311803.82,
-          "created_date": "2023-07-24T00:41:00Z",
-          "fraudFlag": true
+          "created_date": "2023-07-24T00:41:00Z"
         },
         {
           "id": "A00156",
           "type": "credit",
           "balance": -49988.3,
-          "created_date": "2023-07-24T00:41:00Z",
-          "fraudFlag": true
+          "created_date": "2023-07-24T00:41:00Z"
         }
       ]
     },
@@ -1799,8 +1697,7 @@
           "id": "A00157",
           "type": "savings",
           "balance": 86391.2,
-          "created_date": "2023-09-20T12:35:00Z",
-          "fraudFlag": true
+          "created_date": "2023-09-20T12:35:00Z"
         }
       ]
     },
@@ -1819,8 +1716,7 @@
           "id": "A00159",
           "type": "savings",
           "balance": 290606.31,
-          "created_date": "2023-11-15T03:41:00Z",
-          "fraudFlag": true
+          "created_date": "2023-11-15T03:41:00Z"
         }
       ]
     },
@@ -1839,8 +1735,7 @@
           "id": "A00161",
           "type": "savings",
           "balance": 40770.25,
-          "created_date": "2024-02-11T06:46:00Z",
-          "fraudFlag": true
+          "created_date": "2024-02-11T06:46:00Z"
         }
       ]
     },
@@ -1859,15 +1754,13 @@
           "id": "A00163",
           "type": "savings",
           "balance": 391969.77,
-          "created_date": "2023-05-04T19:19:00Z",
-          "fraudFlag": true
+          "created_date": "2023-05-04T19:19:00Z"
         },
         {
           "id": "A00164",
           "type": "credit",
           "balance": -45695.91,
-          "created_date": "2023-05-04T19:19:00Z",
-          "fraudFlag": true
+          "created_date": "2023-05-04T19:19:00Z"
         }
       ]
     },
@@ -1886,15 +1779,13 @@
           "id": "A00165",
           "type": "savings",
           "balance": 411698.47,
-          "created_date": "2023-01-13T14:20:00Z",
-          "fraudFlag": true
+          "created_date": "2023-01-13T14:20:00Z"
         },
         {
           "id": "A00166",
           "type": "credit",
           "balance": -96274.82,
-          "created_date": "2023-01-13T14:20:00Z",
-          "fraudFlag": true
+          "created_date": "2023-01-13T14:20:00Z"
         }
       ]
     },
@@ -1913,8 +1804,7 @@
           "id": "A00167",
           "type": "savings",
           "balance": 137230.95,
-          "created_date": "2024-06-18T22:12:00Z",
-          "fraudFlag": true
+          "created_date": "2024-06-18T22:12:00Z"
         }
       ]
     },
@@ -1933,8 +1823,7 @@
           "id": "A00169",
           "type": "savings",
           "balance": 426301.44,
-          "created_date": "2023-10-02T11:00:00Z",
-          "fraudFlag": true
+          "created_date": "2023-10-02T11:00:00Z"
         }
       ]
     },
@@ -1953,15 +1842,13 @@
           "id": "A00171",
           "type": "savings",
           "balance": 306334.86,
-          "created_date": "2024-04-20T19:27:00Z",
-          "fraudFlag": true
+          "created_date": "2024-04-20T19:27:00Z"
         },
         {
           "id": "A00172",
           "type": "credit",
           "balance": -7726.5,
-          "created_date": "2024-04-20T19:27:00Z",
-          "fraudFlag": true
+          "created_date": "2024-04-20T19:27:00Z"
         }
       ]
     },
@@ -1980,8 +1867,7 @@
           "id": "A00173",
           "type": "savings",
           "balance": 141990.27,
-          "created_date": "2023-09-22T11:37:00Z",
-          "fraudFlag": true
+          "created_date": "2023-09-22T11:37:00Z"
         }
       ]
     },
@@ -2000,15 +1886,13 @@
           "id": "A00175",
           "type": "savings",
           "balance": 122953.96,
-          "created_date": "2023-07-15T02:55:00Z",
-          "fraudFlag": true
+          "created_date": "2023-07-15T02:55:00Z"
         },
         {
           "id": "A00176",
           "type": "credit",
           "balance": -57741.74,
-          "created_date": "2023-07-15T02:55:00Z",
-          "fraudFlag": true
+          "created_date": "2023-07-15T02:55:00Z"
         }
       ]
     },
@@ -2027,15 +1911,13 @@
           "id": "A00177",
           "type": "savings",
           "balance": 397087.64,
-          "created_date": "2024-05-17T15:17:00Z",
-          "fraudFlag": true
+          "created_date": "2024-05-17T15:17:00Z"
         },
         {
           "id": "A00178",
           "type": "credit",
           "balance": -26051.66,
-          "created_date": "2024-05-17T15:17:00Z",
-          "fraudFlag": true
+          "created_date": "2024-05-17T15:17:00Z"
         }
       ]
     },
@@ -2054,15 +1936,13 @@
           "id": "A00179",
           "type": "savings",
           "balance": 266868.2,
-          "created_date": "2024-04-29T18:53:00Z",
-          "fraudFlag": true
+          "created_date": "2024-04-29T18:53:00Z"
         },
         {
           "id": "A00180",
           "type": "credit",
           "balance": -75863.87,
-          "created_date": "2024-04-29T18:53:00Z",
-          "fraudFlag": true
+          "created_date": "2024-04-29T18:53:00Z"
         }
       ]
     },
@@ -2081,8 +1961,7 @@
           "id": "A00181",
           "type": "savings",
           "balance": 117577.41,
-          "created_date": "2023-11-10T08:34:00Z",
-          "fraudFlag": true
+          "created_date": "2023-11-10T08:34:00Z"
         }
       ]
     },
@@ -2101,15 +1980,13 @@
           "id": "A00183",
           "type": "savings",
           "balance": 110543.17,
-          "created_date": "2023-07-09T06:32:00Z",
-          "fraudFlag": true
+          "created_date": "2023-07-09T06:32:00Z"
         },
         {
           "id": "A00184",
           "type": "credit",
           "balance": -73835.58,
-          "created_date": "2023-07-09T06:32:00Z",
-          "fraudFlag": true
+          "created_date": "2023-07-09T06:32:00Z"
         }
       ]
     },
@@ -2128,15 +2005,13 @@
           "id": "A00185",
           "type": "savings",
           "balance": 116059.13,
-          "created_date": "2023-07-18T10:06:00Z",
-          "fraudFlag": true
+          "created_date": "2023-07-18T10:06:00Z"
         },
         {
           "id": "A00186",
           "type": "credit",
           "balance": -6344.09,
-          "created_date": "2023-07-18T10:06:00Z",
-          "fraudFlag": true
+          "created_date": "2023-07-18T10:06:00Z"
         }
       ]
     },
@@ -2155,8 +2030,7 @@
           "id": "A00187",
           "type": "savings",
           "balance": 148191.91,
-          "created_date": "2023-02-25T18:53:00Z",
-          "fraudFlag": true
+          "created_date": "2023-02-25T18:53:00Z"
         }
       ]
     },
@@ -2175,15 +2049,13 @@
           "id": "A00189",
           "type": "savings",
           "balance": 240920.96,
-          "created_date": "2023-10-19T16:01:00Z",
-          "fraudFlag": true
+          "created_date": "2023-10-19T16:01:00Z"
         },
         {
           "id": "A00190",
           "type": "credit",
           "balance": -96722.28,
-          "created_date": "2023-10-19T16:01:00Z",
-          "fraudFlag": true
+          "created_date": "2023-10-19T16:01:00Z"
         }
       ]
     },
@@ -2202,8 +2074,7 @@
           "id": "A00191",
           "type": "savings",
           "balance": 247398.04,
-          "created_date": "2023-03-08T13:40:00Z",
-          "fraudFlag": true
+          "created_date": "2023-03-08T13:40:00Z"
         }
       ]
     },
@@ -2222,15 +2093,13 @@
           "id": "A00193",
           "type": "savings",
           "balance": 496977.31,
-          "created_date": "2023-11-08T02:54:00Z",
-          "fraudFlag": true
+          "created_date": "2023-11-08T02:54:00Z"
         },
         {
           "id": "A00194",
           "type": "credit",
           "balance": -77622.13,
-          "created_date": "2023-11-08T02:54:00Z",
-          "fraudFlag": true
+          "created_date": "2023-11-08T02:54:00Z"
         }
       ]
     },
@@ -2249,15 +2118,13 @@
           "id": "A00195",
           "type": "savings",
           "balance": 226905.69,
-          "created_date": "2024-06-19T12:59:00Z",
-          "fraudFlag": true
+          "created_date": "2024-06-19T12:59:00Z"
         },
         {
           "id": "A00196",
           "type": "credit",
           "balance": -86715.83,
-          "created_date": "2024-06-19T12:59:00Z",
-          "fraudFlag": true
+          "created_date": "2024-06-19T12:59:00Z"
         }
       ]
     },
@@ -2276,15 +2143,13 @@
           "id": "A00197",
           "type": "savings",
           "balance": 313880.97,
-          "created_date": "2023-04-12T07:05:00Z",
-          "fraudFlag": true
+          "created_date": "2023-04-12T07:05:00Z"
         },
         {
           "id": "A00198",
           "type": "credit",
           "balance": -12712.81,
-          "created_date": "2023-04-12T07:05:00Z",
-          "fraudFlag": true
+          "created_date": "2023-04-12T07:05:00Z"
         }
       ]
     },
@@ -2303,8 +2168,7 @@
           "id": "A00199",
           "type": "savings",
           "balance": 226900.34,
-          "created_date": "2023-01-03T13:56:00Z",
-          "fraudFlag": true
+          "created_date": "2023-01-03T13:56:00Z"
         }
       ]
     },
@@ -2323,15 +2187,13 @@
           "id": "A00201",
           "type": "savings",
           "balance": 430224.55,
-          "created_date": "2023-10-17T23:59:00Z",
-          "fraudFlag": true
+          "created_date": "2023-10-17T23:59:00Z"
         },
         {
           "id": "A00202",
           "type": "credit",
           "balance": -27175.26,
-          "created_date": "2023-10-17T23:59:00Z",
-          "fraudFlag": true
+          "created_date": "2023-10-17T23:59:00Z"
         }
       ]
     },
@@ -2350,15 +2212,13 @@
           "id": "A00203",
           "type": "savings",
           "balance": 60043.82,
-          "created_date": "2023-07-22T14:30:00Z",
-          "fraudFlag": true
+          "created_date": "2023-07-22T14:30:00Z"
         },
         {
           "id": "A00204",
           "type": "credit",
           "balance": -19153.99,
-          "created_date": "2023-07-22T14:30:00Z",
-          "fraudFlag": true
+          "created_date": "2023-07-22T14:30:00Z"
         }
       ]
     },
@@ -2377,8 +2237,7 @@
           "id": "A00205",
           "type": "savings",
           "balance": 298736.89,
-          "created_date": "2023-06-19T10:29:00Z",
-          "fraudFlag": true
+          "created_date": "2023-06-19T10:29:00Z"
         }
       ]
     },
@@ -2397,15 +2256,13 @@
           "id": "A00207",
           "type": "savings",
           "balance": 203046.73,
-          "created_date": "2023-11-08T23:53:00Z",
-          "fraudFlag": true
+          "created_date": "2023-11-08T23:53:00Z"
         },
         {
           "id": "A00208",
           "type": "credit",
           "balance": -56298.25,
-          "created_date": "2023-11-08T23:53:00Z",
-          "fraudFlag": true
+          "created_date": "2023-11-08T23:53:00Z"
         }
       ]
     },
@@ -2424,15 +2281,13 @@
           "id": "A00209",
           "type": "savings",
           "balance": 303045.68,
-          "created_date": "2024-03-18T11:00:00Z",
-          "fraudFlag": true
+          "created_date": "2024-03-18T11:00:00Z"
         },
         {
           "id": "A00210",
           "type": "credit",
           "balance": -26747.82,
-          "created_date": "2024-03-18T11:00:00Z",
-          "fraudFlag": true
+          "created_date": "2024-03-18T11:00:00Z"
         }
       ]
     },
@@ -2451,8 +2306,7 @@
           "id": "A00211",
           "type": "savings",
           "balance": 22995.14,
-          "created_date": "2023-10-03T19:40:00Z",
-          "fraudFlag": true
+          "created_date": "2023-10-03T19:40:00Z"
         }
       ]
     },
@@ -2471,15 +2325,13 @@
           "id": "A00213",
           "type": "savings",
           "balance": 498481.9,
-          "created_date": "2023-10-12T06:11:00Z",
-          "fraudFlag": true
+          "created_date": "2023-10-12T06:11:00Z"
         },
         {
           "id": "A00214",
           "type": "credit",
           "balance": -82353.27,
-          "created_date": "2023-10-12T06:11:00Z",
-          "fraudFlag": true
+          "created_date": "2023-10-12T06:11:00Z"
         }
       ]
     },
@@ -2498,15 +2350,13 @@
           "id": "A00215",
           "type": "savings",
           "balance": 54986.14,
-          "created_date": "2023-11-25T22:52:00Z",
-          "fraudFlag": true
+          "created_date": "2023-11-25T22:52:00Z"
         },
         {
           "id": "A00216",
           "type": "credit",
           "balance": -44106.28,
-          "created_date": "2023-11-25T22:52:00Z",
-          "fraudFlag": true
+          "created_date": "2023-11-25T22:52:00Z"
         }
       ]
     },
@@ -2525,15 +2375,13 @@
           "id": "A00217",
           "type": "savings",
           "balance": 229048.48,
-          "created_date": "2024-07-17T01:15:00Z",
-          "fraudFlag": true
+          "created_date": "2024-07-17T01:15:00Z"
         },
         {
           "id": "A00218",
           "type": "credit",
           "balance": -35711.01,
-          "created_date": "2024-07-17T01:15:00Z",
-          "fraudFlag": true
+          "created_date": "2024-07-17T01:15:00Z"
         }
       ]
     },
@@ -2552,15 +2400,13 @@
           "id": "A00219",
           "type": "savings",
           "balance": 435075.64,
-          "created_date": "2023-01-02T22:26:00Z",
-          "fraudFlag": true
+          "created_date": "2023-01-02T22:26:00Z"
         },
         {
           "id": "A00220",
           "type": "credit",
           "balance": -10149.39,
-          "created_date": "2023-01-02T22:26:00Z",
-          "fraudFlag": true
+          "created_date": "2023-01-02T22:26:00Z"
         }
       ]
     },
@@ -2579,8 +2425,7 @@
           "id": "A00221",
           "type": "savings",
           "balance": 104168.44,
-          "created_date": "2024-03-28T01:45:00Z",
-          "fraudFlag": true
+          "created_date": "2024-03-28T01:45:00Z"
         }
       ]
     },
@@ -2599,8 +2444,7 @@
           "id": "A00223",
           "type": "savings",
           "balance": 486653.97,
-          "created_date": "2023-05-05T00:59:00Z",
-          "fraudFlag": true
+          "created_date": "2023-05-05T00:59:00Z"
         }
       ]
     },
@@ -2619,15 +2463,13 @@
           "id": "A00225",
           "type": "savings",
           "balance": 205771.37,
-          "created_date": "2023-01-15T18:51:00Z",
-          "fraudFlag": true
+          "created_date": "2023-01-15T18:51:00Z"
         },
         {
           "id": "A00226",
           "type": "credit",
           "balance": -84933.54,
-          "created_date": "2023-01-15T18:51:00Z",
-          "fraudFlag": true
+          "created_date": "2023-01-15T18:51:00Z"
         }
       ]
     },
@@ -2646,15 +2488,13 @@
           "id": "A00227",
           "type": "savings",
           "balance": 466528.57,
-          "created_date": "2023-06-07T17:00:00Z",
-          "fraudFlag": true
+          "created_date": "2023-06-07T17:00:00Z"
         },
         {
           "id": "A00228",
           "type": "credit",
           "balance": -72014.1,
-          "created_date": "2023-06-07T17:00:00Z",
-          "fraudFlag": true
+          "created_date": "2023-06-07T17:00:00Z"
         }
       ]
     },
@@ -2673,15 +2513,13 @@
           "id": "A00229",
           "type": "savings",
           "balance": 276978.74,
-          "created_date": "2023-09-07T15:35:00Z",
-          "fraudFlag": true
+          "created_date": "2023-09-07T15:35:00Z"
         },
         {
           "id": "A00230",
           "type": "credit",
           "balance": -92577.47,
-          "created_date": "2023-09-07T15:35:00Z",
-          "fraudFlag": true
+          "created_date": "2023-09-07T15:35:00Z"
         }
       ]
     },
@@ -2700,8 +2538,7 @@
           "id": "A00231",
           "type": "savings",
           "balance": 387019.54,
-          "created_date": "2023-03-13T09:25:00Z",
-          "fraudFlag": true
+          "created_date": "2023-03-13T09:25:00Z"
         }
       ]
     },
@@ -2720,8 +2557,7 @@
           "id": "A00233",
           "type": "savings",
           "balance": 363847.34,
-          "created_date": "2023-01-03T09:39:00Z",
-          "fraudFlag": true
+          "created_date": "2023-01-03T09:39:00Z"
         }
       ]
     },
@@ -2740,15 +2576,13 @@
           "id": "A00235",
           "type": "savings",
           "balance": 243717.67,
-          "created_date": "2024-04-02T18:23:00Z",
-          "fraudFlag": true
+          "created_date": "2024-04-02T18:23:00Z"
         },
         {
           "id": "A00236",
           "type": "credit",
           "balance": -77472.9,
-          "created_date": "2024-04-02T18:23:00Z",
-          "fraudFlag": true
+          "created_date": "2024-04-02T18:23:00Z"
         }
       ]
     },
@@ -2767,15 +2601,13 @@
           "id": "A00237",
           "type": "savings",
           "balance": 121686.36,
-          "created_date": "2023-07-13T23:48:00Z",
-          "fraudFlag": true
+          "created_date": "2023-07-13T23:48:00Z"
         },
         {
           "id": "A00238",
           "type": "credit",
           "balance": -86321.23,
-          "created_date": "2023-07-13T23:48:00Z",
-          "fraudFlag": true
+          "created_date": "2023-07-13T23:48:00Z"
         }
       ]
     },
@@ -2794,8 +2626,7 @@
           "id": "A00239",
           "type": "savings",
           "balance": 494241.76,
-          "created_date": "2024-01-26T13:10:00Z",
-          "fraudFlag": true
+          "created_date": "2024-01-26T13:10:00Z"
         }
       ]
     },
@@ -2814,15 +2645,13 @@
           "id": "A00241",
           "type": "savings",
           "balance": 437472.62,
-          "created_date": "2023-12-06T03:25:00Z",
-          "fraudFlag": true
+          "created_date": "2023-12-06T03:25:00Z"
         },
         {
           "id": "A00242",
           "type": "credit",
           "balance": -54965.35,
-          "created_date": "2023-12-06T03:25:00Z",
-          "fraudFlag": true
+          "created_date": "2023-12-06T03:25:00Z"
         }
       ]
     },
@@ -2841,8 +2670,7 @@
           "id": "A00243",
           "type": "savings",
           "balance": 236336.83,
-          "created_date": "2023-06-08T02:33:00Z",
-          "fraudFlag": true
+          "created_date": "2023-06-08T02:33:00Z"
         }
       ]
     },
@@ -2861,8 +2689,7 @@
           "id": "A00245",
           "type": "savings",
           "balance": 426613.64,
-          "created_date": "2023-03-24T11:12:00Z",
-          "fraudFlag": true
+          "created_date": "2023-03-24T11:12:00Z"
         }
       ]
     },
@@ -2881,15 +2708,13 @@
           "id": "A00247",
           "type": "savings",
           "balance": 20841.85,
-          "created_date": "2024-05-14T18:28:00Z",
-          "fraudFlag": true
+          "created_date": "2024-05-14T18:28:00Z"
         },
         {
           "id": "A00248",
           "type": "credit",
           "balance": -64960.3,
-          "created_date": "2024-05-14T18:28:00Z",
-          "fraudFlag": true
+          "created_date": "2024-05-14T18:28:00Z"
         }
       ]
     },
@@ -2908,15 +2733,13 @@
           "id": "A00249",
           "type": "savings",
           "balance": 352833.74,
-          "created_date": "2023-04-11T21:37:00Z",
-          "fraudFlag": true
+          "created_date": "2023-04-11T21:37:00Z"
         },
         {
           "id": "A00250",
           "type": "credit",
           "balance": -20804.65,
-          "created_date": "2023-04-11T21:37:00Z",
-          "fraudFlag": true
+          "created_date": "2023-04-11T21:37:00Z"
         }
       ]
     },
@@ -2935,15 +2758,13 @@
           "id": "A00251",
           "type": "savings",
           "balance": 181156.28,
-          "created_date": "2023-02-27T10:00:00Z",
-          "fraudFlag": true
+          "created_date": "2023-02-27T10:00:00Z"
         },
         {
           "id": "A00252",
           "type": "credit",
           "balance": -28198.76,
-          "created_date": "2023-02-27T10:00:00Z",
-          "fraudFlag": true
+          "created_date": "2023-02-27T10:00:00Z"
         }
       ]
     },
@@ -2962,8 +2783,7 @@
           "id": "A00253",
           "type": "savings",
           "balance": 42247.27,
-          "created_date": "2023-06-24T05:58:00Z",
-          "fraudFlag": true
+          "created_date": "2023-06-24T05:58:00Z"
         }
       ]
     },
@@ -2982,15 +2802,13 @@
           "id": "A00255",
           "type": "savings",
           "balance": 320038.6,
-          "created_date": "2023-08-26T15:44:00Z",
-          "fraudFlag": true
+          "created_date": "2023-08-26T15:44:00Z"
         },
         {
           "id": "A00256",
           "type": "credit",
           "balance": -68349.87,
-          "created_date": "2023-08-26T15:44:00Z",
-          "fraudFlag": true
+          "created_date": "2023-08-26T15:44:00Z"
         }
       ]
     },
@@ -3009,15 +2827,13 @@
           "id": "A00257",
           "type": "savings",
           "balance": 222539.7,
-          "created_date": "2023-06-11T02:31:00Z",
-          "fraudFlag": true
+          "created_date": "2023-06-11T02:31:00Z"
         },
         {
           "id": "A00258",
           "type": "credit",
           "balance": -60819.31,
-          "created_date": "2023-06-11T02:31:00Z",
-          "fraudFlag": true
+          "created_date": "2023-06-11T02:31:00Z"
         }
       ]
     },
@@ -3036,8 +2852,7 @@
           "id": "A00259",
           "type": "savings",
           "balance": 499688.66,
-          "created_date": "2023-11-06T06:47:00Z",
-          "fraudFlag": true
+          "created_date": "2023-11-06T06:47:00Z"
         }
       ]
     },
@@ -3056,15 +2871,13 @@
           "id": "A00261",
           "type": "savings",
           "balance": 496367.95,
-          "created_date": "2024-08-11T10:05:00Z",
-          "fraudFlag": true
+          "created_date": "2024-08-11T10:05:00Z"
         },
         {
           "id": "A00262",
           "type": "credit",
           "balance": -97904.73,
-          "created_date": "2024-08-11T10:05:00Z",
-          "fraudFlag": true
+          "created_date": "2024-08-11T10:05:00Z"
         }
       ]
     },
@@ -3083,8 +2896,7 @@
           "id": "A00263",
           "type": "savings",
           "balance": 373350.56,
-          "created_date": "2023-02-20T20:41:00Z",
-          "fraudFlag": true
+          "created_date": "2023-02-20T20:41:00Z"
         }
       ]
     },
@@ -3103,8 +2915,7 @@
           "id": "A00265",
           "type": "savings",
           "balance": 319399.09,
-          "created_date": "2023-12-27T07:28:00Z",
-          "fraudFlag": true
+          "created_date": "2023-12-27T07:28:00Z"
         }
       ]
     },
@@ -3123,15 +2934,13 @@
           "id": "A00267",
           "type": "savings",
           "balance": 394939.41,
-          "created_date": "2023-02-10T10:32:00Z",
-          "fraudFlag": true
+          "created_date": "2023-02-10T10:32:00Z"
         },
         {
           "id": "A00268",
           "type": "credit",
           "balance": -39661.82,
-          "created_date": "2023-02-10T10:32:00Z",
-          "fraudFlag": true
+          "created_date": "2023-02-10T10:32:00Z"
         }
       ]
     },
@@ -3150,8 +2959,7 @@
           "id": "A00269",
           "type": "savings",
           "balance": 102795.01,
-          "created_date": "2024-03-01T05:59:00Z",
-          "fraudFlag": true
+          "created_date": "2024-03-01T05:59:00Z"
         }
       ]
     },
@@ -3170,8 +2978,7 @@
           "id": "A00271",
           "type": "savings",
           "balance": 457282.33,
-          "created_date": "2023-06-18T08:46:00Z",
-          "fraudFlag": true
+          "created_date": "2023-06-18T08:46:00Z"
         }
       ]
     },
@@ -3190,15 +2997,13 @@
           "id": "A00273",
           "type": "savings",
           "balance": 481557.97,
-          "created_date": "2023-04-28T15:59:00Z",
-          "fraudFlag": true
+          "created_date": "2023-04-28T15:59:00Z"
         },
         {
           "id": "A00274",
           "type": "credit",
           "balance": -96817.52,
-          "created_date": "2023-04-28T15:59:00Z",
-          "fraudFlag": true
+          "created_date": "2023-04-28T15:59:00Z"
         }
       ]
     },
@@ -3217,8 +3022,7 @@
           "id": "A00275",
           "type": "savings",
           "balance": 9917.57,
-          "created_date": "2023-04-03T13:28:00Z",
-          "fraudFlag": true
+          "created_date": "2023-04-03T13:28:00Z"
         }
       ]
     },
@@ -3237,8 +3041,7 @@
           "id": "A00277",
           "type": "savings",
           "balance": 192369.67,
-          "created_date": "2023-09-26T19:57:00Z",
-          "fraudFlag": true
+          "created_date": "2023-09-26T19:57:00Z"
         }
       ]
     },
@@ -3257,8 +3060,7 @@
           "id": "A00279",
           "type": "savings",
           "balance": 442464.72,
-          "created_date": "2023-01-26T21:08:00Z",
-          "fraudFlag": true
+          "created_date": "2023-01-26T21:08:00Z"
         }
       ]
     },
@@ -3277,15 +3079,13 @@
           "id": "A00281",
           "type": "savings",
           "balance": 153188.52,
-          "created_date": "2024-04-20T23:55:00Z",
-          "fraudFlag": true
+          "created_date": "2024-04-20T23:55:00Z"
         },
         {
           "id": "A00282",
           "type": "credit",
           "balance": -18278.82,
-          "created_date": "2024-04-20T23:55:00Z",
-          "fraudFlag": true
+          "created_date": "2024-04-20T23:55:00Z"
         }
       ]
     },
@@ -3304,15 +3104,13 @@
           "id": "A00283",
           "type": "savings",
           "balance": 70425.03,
-          "created_date": "2023-08-29T18:20:00Z",
-          "fraudFlag": true
+          "created_date": "2023-08-29T18:20:00Z"
         },
         {
           "id": "A00284",
           "type": "credit",
           "balance": -68696.19,
-          "created_date": "2023-08-29T18:20:00Z",
-          "fraudFlag": true
+          "created_date": "2023-08-29T18:20:00Z"
         }
       ]
     },
@@ -3331,8 +3129,7 @@
           "id": "A00285",
           "type": "savings",
           "balance": 328496.18,
-          "created_date": "2023-06-08T14:09:00Z",
-          "fraudFlag": true
+          "created_date": "2023-06-08T14:09:00Z"
         }
       ]
     },
@@ -3351,15 +3148,13 @@
           "id": "A00287",
           "type": "savings",
           "balance": 224013.84,
-          "created_date": "2023-08-11T15:08:00Z",
-          "fraudFlag": true
+          "created_date": "2023-08-11T15:08:00Z"
         },
         {
           "id": "A00288",
           "type": "credit",
           "balance": -39455.17,
-          "created_date": "2023-08-11T15:08:00Z",
-          "fraudFlag": true
+          "created_date": "2023-08-11T15:08:00Z"
         }
       ]
     },
@@ -3378,15 +3173,13 @@
           "id": "A00289",
           "type": "savings",
           "balance": 200875.4,
-          "created_date": "2024-01-03T02:04:00Z",
-          "fraudFlag": true
+          "created_date": "2024-01-03T02:04:00Z"
         },
         {
           "id": "A00290",
           "type": "credit",
           "balance": -16605.17,
-          "created_date": "2024-01-03T02:04:00Z",
-          "fraudFlag": true
+          "created_date": "2024-01-03T02:04:00Z"
         }
       ]
     },
@@ -3405,15 +3198,13 @@
           "id": "A00291",
           "type": "savings",
           "balance": 394036.91,
-          "created_date": "2023-01-22T01:43:00Z",
-          "fraudFlag": true
+          "created_date": "2023-01-22T01:43:00Z"
         },
         {
           "id": "A00292",
           "type": "credit",
           "balance": -16962.77,
-          "created_date": "2023-01-22T01:43:00Z",
-          "fraudFlag": true
+          "created_date": "2023-01-22T01:43:00Z"
         }
       ]
     },
@@ -3432,8 +3223,7 @@
           "id": "A00293",
           "type": "savings",
           "balance": 294432.39,
-          "created_date": "2024-07-21T07:04:00Z",
-          "fraudFlag": true
+          "created_date": "2024-07-21T07:04:00Z"
         }
       ]
     },
@@ -3452,15 +3242,13 @@
           "id": "A00295",
           "type": "savings",
           "balance": 429627.84,
-          "created_date": "2023-01-03T09:27:00Z",
-          "fraudFlag": true
+          "created_date": "2023-01-03T09:27:00Z"
         },
         {
           "id": "A00296",
           "type": "credit",
           "balance": -17349.25,
-          "created_date": "2023-01-03T09:27:00Z",
-          "fraudFlag": true
+          "created_date": "2023-01-03T09:27:00Z"
         }
       ]
     },
@@ -3479,8 +3267,7 @@
           "id": "A00297",
           "type": "savings",
           "balance": 10385.58,
-          "created_date": "2023-01-27T04:29:00Z",
-          "fraudFlag": true
+          "created_date": "2023-01-27T04:29:00Z"
         }
       ]
     },
@@ -3499,15 +3286,13 @@
           "id": "A00299",
           "type": "savings",
           "balance": 65999.0,
-          "created_date": "2023-09-29T01:47:00Z",
-          "fraudFlag": true
+          "created_date": "2023-09-29T01:47:00Z"
         },
         {
           "id": "A00300",
           "type": "credit",
           "balance": -15796.68,
-          "created_date": "2023-09-29T01:47:00Z",
-          "fraudFlag": true
+          "created_date": "2023-09-29T01:47:00Z"
         }
       ]
     },
@@ -3526,8 +3311,7 @@
           "id": "A00301",
           "type": "savings",
           "balance": 57199.84,
-          "created_date": "2024-06-09T20:15:00Z",
-          "fraudFlag": true
+          "created_date": "2024-06-09T20:15:00Z"
         }
       ]
     },
@@ -3546,8 +3330,7 @@
           "id": "A00303",
           "type": "savings",
           "balance": 230647.13,
-          "created_date": "2024-06-17T10:17:00Z",
-          "fraudFlag": true
+          "created_date": "2024-06-17T10:17:00Z"
         }
       ]
     },
@@ -3566,15 +3349,13 @@
           "id": "A00305",
           "type": "savings",
           "balance": 357063.45,
-          "created_date": "2023-04-21T16:44:00Z",
-          "fraudFlag": true
+          "created_date": "2023-04-21T16:44:00Z"
         },
         {
           "id": "A00306",
           "type": "credit",
           "balance": -90430.34,
-          "created_date": "2023-04-21T16:44:00Z",
-          "fraudFlag": true
+          "created_date": "2023-04-21T16:44:00Z"
         }
       ]
     },
@@ -3593,8 +3374,7 @@
           "id": "A00307",
           "type": "savings",
           "balance": 317639.13,
-          "created_date": "2023-10-09T21:18:00Z",
-          "fraudFlag": true
+          "created_date": "2023-10-09T21:18:00Z"
         }
       ]
     },
@@ -3613,15 +3393,13 @@
           "id": "A00309",
           "type": "savings",
           "balance": 303897.12,
-          "created_date": "2024-04-09T17:15:00Z",
-          "fraudFlag": true
+          "created_date": "2024-04-09T17:15:00Z"
         },
         {
           "id": "A00310",
           "type": "credit",
           "balance": -71669.04,
-          "created_date": "2024-04-09T17:15:00Z",
-          "fraudFlag": true
+          "created_date": "2024-04-09T17:15:00Z"
         }
       ]
     },
@@ -3640,8 +3418,7 @@
           "id": "A00311",
           "type": "savings",
           "balance": 208665.34,
-          "created_date": "2024-04-07T07:47:00Z",
-          "fraudFlag": true
+          "created_date": "2024-04-07T07:47:00Z"
         }
       ]
     },
@@ -3660,15 +3437,13 @@
           "id": "A00313",
           "type": "savings",
           "balance": 333558.61,
-          "created_date": "2024-03-13T10:40:00Z",
-          "fraudFlag": true
+          "created_date": "2024-03-13T10:40:00Z"
         },
         {
           "id": "A00314",
           "type": "credit",
           "balance": -19500.7,
-          "created_date": "2024-03-13T10:40:00Z",
-          "fraudFlag": true
+          "created_date": "2024-03-13T10:40:00Z"
         }
       ]
     },
@@ -3687,8 +3462,7 @@
           "id": "A00315",
           "type": "savings",
           "balance": 50992.52,
-          "created_date": "2023-04-06T14:44:00Z",
-          "fraudFlag": true
+          "created_date": "2023-04-06T14:44:00Z"
         }
       ]
     },
@@ -3707,15 +3481,13 @@
           "id": "A00317",
           "type": "savings",
           "balance": 166834.05,
-          "created_date": "2024-07-29T19:10:00Z",
-          "fraudFlag": true
+          "created_date": "2024-07-29T19:10:00Z"
         },
         {
           "id": "A00318",
           "type": "credit",
           "balance": -38591.82,
-          "created_date": "2024-07-29T19:10:00Z",
-          "fraudFlag": true
+          "created_date": "2024-07-29T19:10:00Z"
         }
       ]
     },
@@ -3734,15 +3506,13 @@
           "id": "A00319",
           "type": "savings",
           "balance": 158287.1,
-          "created_date": "2023-10-22T20:29:00Z",
-          "fraudFlag": true
+          "created_date": "2023-10-22T20:29:00Z"
         },
         {
           "id": "A00320",
           "type": "credit",
           "balance": -53204.19,
-          "created_date": "2023-10-22T20:29:00Z",
-          "fraudFlag": true
+          "created_date": "2023-10-22T20:29:00Z"
         }
       ]
     },
@@ -3761,15 +3531,13 @@
           "id": "A00321",
           "type": "savings",
           "balance": 423150.59,
-          "created_date": "2023-04-21T11:57:00Z",
-          "fraudFlag": true
+          "created_date": "2023-04-21T11:57:00Z"
         },
         {
           "id": "A00322",
           "type": "credit",
           "balance": -77447.54,
-          "created_date": "2023-04-21T11:57:00Z",
-          "fraudFlag": true
+          "created_date": "2023-04-21T11:57:00Z"
         }
       ]
     },
@@ -3788,8 +3556,7 @@
           "id": "A00323",
           "type": "savings",
           "balance": 307945.92,
-          "created_date": "2024-07-28T21:13:00Z",
-          "fraudFlag": true
+          "created_date": "2024-07-28T21:13:00Z"
         }
       ]
     },
@@ -3808,8 +3575,7 @@
           "id": "A00325",
           "type": "savings",
           "balance": 92666.79,
-          "created_date": "2023-10-01T00:59:00Z",
-          "fraudFlag": true
+          "created_date": "2023-10-01T00:59:00Z"
         }
       ]
     },
@@ -3828,15 +3594,13 @@
           "id": "A00327",
           "type": "savings",
           "balance": 284461.58,
-          "created_date": "2023-07-05T04:53:00Z",
-          "fraudFlag": true
+          "created_date": "2023-07-05T04:53:00Z"
         },
         {
           "id": "A00328",
           "type": "credit",
           "balance": -18478.09,
-          "created_date": "2023-07-05T04:53:00Z",
-          "fraudFlag": true
+          "created_date": "2023-07-05T04:53:00Z"
         }
       ]
     },
@@ -3855,15 +3619,13 @@
           "id": "A00329",
           "type": "savings",
           "balance": 228461.96,
-          "created_date": "2024-01-21T14:19:00Z",
-          "fraudFlag": true
+          "created_date": "2024-01-21T14:19:00Z"
         },
         {
           "id": "A00330",
           "type": "credit",
           "balance": -34605.55,
-          "created_date": "2024-01-21T14:19:00Z",
-          "fraudFlag": true
+          "created_date": "2024-01-21T14:19:00Z"
         }
       ]
     },
@@ -3882,8 +3644,7 @@
           "id": "A00331",
           "type": "savings",
           "balance": 81232.72,
-          "created_date": "2023-02-23T05:18:00Z",
-          "fraudFlag": true
+          "created_date": "2023-02-23T05:18:00Z"
         }
       ]
     },
@@ -3902,15 +3663,13 @@
           "id": "A00333",
           "type": "savings",
           "balance": 222695.96,
-          "created_date": "2024-05-12T20:43:00Z",
-          "fraudFlag": true
+          "created_date": "2024-05-12T20:43:00Z"
         },
         {
           "id": "A00334",
           "type": "credit",
           "balance": -76719.6,
-          "created_date": "2024-05-12T20:43:00Z",
-          "fraudFlag": true
+          "created_date": "2024-05-12T20:43:00Z"
         }
       ]
     },
@@ -3929,15 +3688,13 @@
           "id": "A00335",
           "type": "savings",
           "balance": 334564.88,
-          "created_date": "2024-05-13T17:59:00Z",
-          "fraudFlag": true
+          "created_date": "2024-05-13T17:59:00Z"
         },
         {
           "id": "A00336",
           "type": "credit",
           "balance": -42550.02,
-          "created_date": "2024-05-13T17:59:00Z",
-          "fraudFlag": true
+          "created_date": "2024-05-13T17:59:00Z"
         }
       ]
     },
@@ -3956,15 +3713,13 @@
           "id": "A00337",
           "type": "savings",
           "balance": 382787.97,
-          "created_date": "2023-08-05T04:41:00Z",
-          "fraudFlag": true
+          "created_date": "2023-08-05T04:41:00Z"
         },
         {
           "id": "A00338",
           "type": "credit",
           "balance": -16398.51,
-          "created_date": "2023-08-05T04:41:00Z",
-          "fraudFlag": true
+          "created_date": "2023-08-05T04:41:00Z"
         }
       ]
     },
@@ -3983,8 +3738,7 @@
           "id": "A00339",
           "type": "savings",
           "balance": 352724.62,
-          "created_date": "2024-01-25T18:10:00Z",
-          "fraudFlag": true
+          "created_date": "2024-01-25T18:10:00Z"
         }
       ]
     },
@@ -4003,8 +3757,7 @@
           "id": "A00341",
           "type": "savings",
           "balance": 12314.54,
-          "created_date": "2023-02-13T14:53:00Z",
-          "fraudFlag": true
+          "created_date": "2023-02-13T14:53:00Z"
         }
       ]
     },
@@ -4023,15 +3776,13 @@
           "id": "A00343",
           "type": "savings",
           "balance": 60241.17,
-          "created_date": "2024-03-03T09:52:00Z",
-          "fraudFlag": true
+          "created_date": "2024-03-03T09:52:00Z"
         },
         {
           "id": "A00344",
           "type": "credit",
           "balance": -35852.98,
-          "created_date": "2024-03-03T09:52:00Z",
-          "fraudFlag": true
+          "created_date": "2024-03-03T09:52:00Z"
         }
       ]
     },
@@ -4050,15 +3801,13 @@
           "id": "A00345",
           "type": "savings",
           "balance": 422708.73,
-          "created_date": "2023-04-01T14:54:00Z",
-          "fraudFlag": true
+          "created_date": "2023-04-01T14:54:00Z"
         },
         {
           "id": "A00346",
           "type": "credit",
           "balance": -60942.77,
-          "created_date": "2023-04-01T14:54:00Z",
-          "fraudFlag": true
+          "created_date": "2023-04-01T14:54:00Z"
         }
       ]
     },
@@ -4077,15 +3826,13 @@
           "id": "A00347",
           "type": "savings",
           "balance": 168535.11,
-          "created_date": "2023-12-14T07:33:00Z",
-          "fraudFlag": true
+          "created_date": "2023-12-14T07:33:00Z"
         },
         {
           "id": "A00348",
           "type": "credit",
           "balance": -53495.91,
-          "created_date": "2023-12-14T07:33:00Z",
-          "fraudFlag": true
+          "created_date": "2023-12-14T07:33:00Z"
         }
       ]
     },
@@ -4104,8 +3851,7 @@
           "id": "A00349",
           "type": "savings",
           "balance": 364507.42,
-          "created_date": "2023-12-24T11:59:00Z",
-          "fraudFlag": true
+          "created_date": "2023-12-24T11:59:00Z"
         }
       ]
     },
@@ -4124,8 +3870,7 @@
           "id": "A00351",
           "type": "savings",
           "balance": 302392.3,
-          "created_date": "2023-07-22T05:55:00Z",
-          "fraudFlag": true
+          "created_date": "2023-07-22T05:55:00Z"
         }
       ]
     },
@@ -4144,15 +3889,13 @@
           "id": "A00353",
           "type": "savings",
           "balance": 380658.94,
-          "created_date": "2024-04-20T19:14:00Z",
-          "fraudFlag": true
+          "created_date": "2024-04-20T19:14:00Z"
         },
         {
           "id": "A00354",
           "type": "credit",
           "balance": -92794.65,
-          "created_date": "2024-04-20T19:14:00Z",
-          "fraudFlag": true
+          "created_date": "2024-04-20T19:14:00Z"
         }
       ]
     },
@@ -4171,15 +3914,13 @@
           "id": "A00355",
           "type": "savings",
           "balance": 160121.03,
-          "created_date": "2023-11-27T21:24:00Z",
-          "fraudFlag": true
+          "created_date": "2023-11-27T21:24:00Z"
         },
         {
           "id": "A00356",
           "type": "credit",
           "balance": -49547.5,
-          "created_date": "2023-11-27T21:24:00Z",
-          "fraudFlag": true
+          "created_date": "2023-11-27T21:24:00Z"
         }
       ]
     },
@@ -4198,15 +3939,13 @@
           "id": "A00357",
           "type": "savings",
           "balance": 39872.76,
-          "created_date": "2023-12-27T17:19:00Z",
-          "fraudFlag": true
+          "created_date": "2023-12-27T17:19:00Z"
         },
         {
           "id": "A00358",
           "type": "credit",
           "balance": -8572.69,
-          "created_date": "2023-12-27T17:19:00Z",
-          "fraudFlag": true
+          "created_date": "2023-12-27T17:19:00Z"
         }
       ]
     },
@@ -4225,15 +3964,13 @@
           "id": "A00359",
           "type": "savings",
           "balance": 298257.67,
-          "created_date": "2023-04-03T20:59:00Z",
-          "fraudFlag": true
+          "created_date": "2023-04-03T20:59:00Z"
         },
         {
           "id": "A00360",
           "type": "credit",
           "balance": -60131.29,
-          "created_date": "2023-04-03T20:59:00Z",
-          "fraudFlag": true
+          "created_date": "2023-04-03T20:59:00Z"
         }
       ]
     },
@@ -4252,8 +3989,7 @@
           "id": "A00361",
           "type": "savings",
           "balance": 303687.9,
-          "created_date": "2023-07-12T10:58:00Z",
-          "fraudFlag": true
+          "created_date": "2023-07-12T10:58:00Z"
         }
       ]
     },
@@ -4272,15 +4008,13 @@
           "id": "A00363",
           "type": "savings",
           "balance": 253760.85,
-          "created_date": "2023-12-18T02:52:00Z",
-          "fraudFlag": true
+          "created_date": "2023-12-18T02:52:00Z"
         },
         {
           "id": "A00364",
           "type": "credit",
           "balance": -28535.65,
-          "created_date": "2023-12-18T02:52:00Z",
-          "fraudFlag": true
+          "created_date": "2023-12-18T02:52:00Z"
         }
       ]
     },
@@ -4299,15 +4033,13 @@
           "id": "A00365",
           "type": "savings",
           "balance": 188307.44,
-          "created_date": "2023-06-12T12:25:00Z",
-          "fraudFlag": true
+          "created_date": "2023-06-12T12:25:00Z"
         },
         {
           "id": "A00366",
           "type": "credit",
           "balance": -43833.09,
-          "created_date": "2023-06-12T12:25:00Z",
-          "fraudFlag": true
+          "created_date": "2023-06-12T12:25:00Z"
         }
       ]
     },
@@ -4326,8 +4058,7 @@
           "id": "A00367",
           "type": "savings",
           "balance": 166856.31,
-          "created_date": "2023-12-09T02:14:00Z",
-          "fraudFlag": true
+          "created_date": "2023-12-09T02:14:00Z"
         }
       ]
     },
@@ -4346,8 +4077,7 @@
           "id": "A00369",
           "type": "savings",
           "balance": 43506.49,
-          "created_date": "2023-06-03T11:22:00Z",
-          "fraudFlag": true
+          "created_date": "2023-06-03T11:22:00Z"
         }
       ]
     },
@@ -4366,8 +4096,7 @@
           "id": "A00371",
           "type": "savings",
           "balance": 298735.49,
-          "created_date": "2024-02-06T04:24:00Z",
-          "fraudFlag": true
+          "created_date": "2024-02-06T04:24:00Z"
         }
       ]
     },
@@ -4386,8 +4115,7 @@
           "id": "A00373",
           "type": "savings",
           "balance": 336047.85,
-          "created_date": "2023-12-03T04:21:00Z",
-          "fraudFlag": true
+          "created_date": "2023-12-03T04:21:00Z"
         }
       ]
     },
@@ -4406,15 +4134,13 @@
           "id": "A00375",
           "type": "savings",
           "balance": 12060.58,
-          "created_date": "2024-06-04T12:21:00Z",
-          "fraudFlag": true
+          "created_date": "2024-06-04T12:21:00Z"
         },
         {
           "id": "A00376",
           "type": "credit",
           "balance": -95361.08,
-          "created_date": "2024-06-04T12:21:00Z",
-          "fraudFlag": true
+          "created_date": "2024-06-04T12:21:00Z"
         }
       ]
     },
@@ -4433,8 +4159,7 @@
           "id": "A00377",
           "type": "savings",
           "balance": 41351.05,
-          "created_date": "2023-05-21T05:17:00Z",
-          "fraudFlag": true
+          "created_date": "2023-05-21T05:17:00Z"
         }
       ]
     },
@@ -4453,8 +4178,7 @@
           "id": "A00379",
           "type": "savings",
           "balance": 331978.83,
-          "created_date": "2024-06-23T01:17:00Z",
-          "fraudFlag": true
+          "created_date": "2024-06-23T01:17:00Z"
         }
       ]
     },
@@ -4473,8 +4197,7 @@
           "id": "A00381",
           "type": "savings",
           "balance": 386235.61,
-          "created_date": "2023-07-05T23:38:00Z",
-          "fraudFlag": true
+          "created_date": "2023-07-05T23:38:00Z"
         }
       ]
     },
@@ -4493,8 +4216,7 @@
           "id": "A00383",
           "type": "savings",
           "balance": 360634.08,
-          "created_date": "2024-01-09T23:05:00Z",
-          "fraudFlag": true
+          "created_date": "2024-01-09T23:05:00Z"
         }
       ]
     },
@@ -4513,8 +4235,7 @@
           "id": "A00385",
           "type": "savings",
           "balance": 121866.74,
-          "created_date": "2023-08-28T18:13:00Z",
-          "fraudFlag": true
+          "created_date": "2023-08-28T18:13:00Z"
         }
       ]
     },
@@ -4533,15 +4254,13 @@
           "id": "A00387",
           "type": "savings",
           "balance": 232454.95,
-          "created_date": "2024-08-07T15:02:00Z",
-          "fraudFlag": true
+          "created_date": "2024-08-07T15:02:00Z"
         },
         {
           "id": "A00388",
           "type": "credit",
           "balance": -41277.88,
-          "created_date": "2024-08-07T15:02:00Z",
-          "fraudFlag": true
+          "created_date": "2024-08-07T15:02:00Z"
         }
       ]
     },
@@ -4560,15 +4279,13 @@
           "id": "A00389",
           "type": "savings",
           "balance": 28933.36,
-          "created_date": "2023-05-22T08:32:00Z",
-          "fraudFlag": true
+          "created_date": "2023-05-22T08:32:00Z"
         },
         {
           "id": "A00390",
           "type": "credit",
           "balance": -40265.15,
-          "created_date": "2023-05-22T08:32:00Z",
-          "fraudFlag": true
+          "created_date": "2023-05-22T08:32:00Z"
         }
       ]
     },
@@ -4587,15 +4304,13 @@
           "id": "A00391",
           "type": "savings",
           "balance": 44685.94,
-          "created_date": "2023-05-08T09:43:00Z",
-          "fraudFlag": true
+          "created_date": "2023-05-08T09:43:00Z"
         },
         {
           "id": "A00392",
           "type": "credit",
           "balance": -47685.33,
-          "created_date": "2023-05-08T09:43:00Z",
-          "fraudFlag": true
+          "created_date": "2023-05-08T09:43:00Z"
         }
       ]
     },
@@ -4614,8 +4329,7 @@
           "id": "A00393",
           "type": "savings",
           "balance": 442661.0,
-          "created_date": "2023-08-16T15:23:00Z",
-          "fraudFlag": true
+          "created_date": "2023-08-16T15:23:00Z"
         }
       ]
     },
@@ -4634,15 +4348,13 @@
           "id": "A00395",
           "type": "savings",
           "balance": 497279.1,
-          "created_date": "2023-08-30T13:10:00Z",
-          "fraudFlag": true
+          "created_date": "2023-08-30T13:10:00Z"
         },
         {
           "id": "A00396",
           "type": "credit",
           "balance": -7677.82,
-          "created_date": "2023-08-30T13:10:00Z",
-          "fraudFlag": true
+          "created_date": "2023-08-30T13:10:00Z"
         }
       ]
     },
@@ -4661,8 +4373,7 @@
           "id": "A00397",
           "type": "savings",
           "balance": 22036.69,
-          "created_date": "2023-05-30T04:41:00Z",
-          "fraudFlag": true
+          "created_date": "2023-05-30T04:41:00Z"
         }
       ]
     },
@@ -4681,8 +4392,7 @@
           "id": "A00399",
           "type": "savings",
           "balance": 308828.08,
-          "created_date": "2024-04-25T15:18:00Z",
-          "fraudFlag": true
+          "created_date": "2024-04-25T15:18:00Z"
         }
       ]
     }

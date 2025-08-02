@@ -1,5 +1,6 @@
 import json
 import random
+import argparse
 from faker import Faker
 from datetime import datetime, timedelta
 
@@ -7,6 +8,11 @@ from datetime import datetime, timedelta
 fake = Faker("en_IN")
 Faker.seed(42)
 random.seed(42)
+
+# Command-line argument
+parser = argparse.ArgumentParser(description="Generate Indian user data with optional fraud flag")
+parser.add_argument("-f", "--fraud", action="store_true", help="Mark all accounts as fraudFlag: true")
+args = parser.parse_args()
 
 # Config
 NUM_USERS = 200
@@ -37,22 +43,29 @@ for i in range(NUM_USERS):
     phone = fake.phone_number()
 
     accounts = []
+
     # Default account: savings
-    accounts.append({
+    account_savings = {
         "id": f"A{str(i*2+1).zfill(5)}",
         "type": "savings",
         "balance": round(random.uniform(3000.0, 500000.0), 2),
         "created_date": signup_date.isoformat() + "Z"
-    })
-    # Optionally add credit account
+    }
+    if args.fraud:
+        account_savings["fraudFlag"] = True
+    accounts.append(account_savings)
+
+    # Optional credit account
     if random.random() < 0.5:
-        credit_balance = round(random.uniform(5000.0, 100000.0), 2) * -1
-        accounts.append({
+        account_credit = {
             "id": f"A{str(i*2+2).zfill(5)}",
             "type": "credit",
-            "balance": credit_balance,
+            "balance": round(random.uniform(5000.0, 100000.0), 2) * -1,
             "created_date": signup_date.isoformat() + "Z"
-        })
+        }
+        if args.fraud:
+            account_credit["fraudFlag"] = True
+        accounts.append(account_credit)
 
     users.append({
         "id": user_id,
@@ -68,7 +81,8 @@ for i in range(NUM_USERS):
     })
 
 # Save to JSON
-with open("users_200_india.json", "w") as f:
+filename = f"users_{NUM_USERS}_india_fraud.json" if args.fraud else  f"users_{NUM_USERS}_india.json"
+with open(filename, "w") as f:
     json.dump({"users": users}, f, indent=2)
 
-print("✅ Generated 2000 Indian users with 'savings' and optional 'credit' accounts in users_2000_india.json")
+print(f"✅ Generated {NUM_USERS} Indian users with accounts in {filename}")
