@@ -104,19 +104,14 @@ class TransactionGeneratorService:
         # Indian fraud locations
         self.indian_fraud_locations = ['Jamtara', 'Bharatpur', 'Alwar', 'Mewat', 'Nuh']
         
-        # Normal locations
+        # Normal locations (Indian cities)
         self.normal_locations = [
-            'New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia',
-            'San Antonio', 'San Diego', 'Dallas', 'San Jose', 'Austin', 'Jacksonville',
-            'Fort Worth', 'Columbus', 'Charlotte', 'San Francisco', 'Indianapolis',
-            'Seattle', 'Denver', 'Washington', 'Boston', 'El Paso', 'Nashville'
-        ]
-        
-        # Merchant categories
-        self.merchant_categories = [
-            'Retail', 'Restaurant', 'Gas Station', 'Online Shopping', 'Grocery Store',
-            'Entertainment', 'Transportation', 'Healthcare', 'Education', 'Travel',
-            'Technology', 'Fashion', 'Home & Garden', 'Sports', 'Books'
+            'Mumbai, Maharashtra', 'Delhi, Delhi', 'Bangalore, Karnataka', 'Hyderabad, Telangana', 
+            'Chennai, Tamil Nadu', 'Kolkata, West Bengal', 'Pune, Maharashtra', 'Ahmedabad, Gujarat',
+            'Jaipur, Rajasthan', 'Surat, Gujarat', 'Lucknow, Uttar Pradesh', 'Kanpur, Uttar Pradesh',
+            'Nagpur, Maharashtra', 'Visakhapatnam, Andhra Pradesh', 'Indore, Madhya Pradesh',
+            'Thane, Maharashtra', 'Bhopal, Madhya Pradesh', 'Patna, Bihar', 'Vadodara, Gujarat',
+            'Ghaziabad, Uttar Pradesh', 'Ludhiana, Punjab', 'Agra, Uttar Pradesh', 'Nashik, Maharashtra'
         ]
         
         # Transaction types
@@ -137,7 +132,7 @@ class TransactionGeneratorService:
             "amount": transaction['amount'],
             "currency": transaction['currency'],
             "transaction_type": transaction['transaction_type'],
-            "merchant": transaction['merchant'],
+
             "location": transaction['location'],
             "status": transaction['status']
         }
@@ -146,7 +141,7 @@ class TransactionGeneratorService:
         logger.info(f"{transaction_type}: {json.dumps(log_data, indent=2)}")
         
         # Log basic transaction info
-        transaction_log_msg = f"ID: {transaction['id']} | Amount: ${transaction['amount']} | Type: {transaction['transaction_type']} | Merchant: {transaction['merchant']}"
+        transaction_log_msg = f"ID: {transaction['id']} | Amount: ₹{transaction['amount']} | Type: {transaction['transaction_type']} | Location: {transaction['location']}"
         logger.info(f"TRANSACTION: {transaction_log_msg}")
 
     def _log_statistics(self):
@@ -274,10 +269,6 @@ class TransactionGeneratorService:
             amount = random.uniform(100.0, 1000000.0)
             transaction_type = random.choice(["transfer", "payment", "deposit", "withdrawal"])
             
-            # Get merchant and location data
-            merchants = ["Amazon", "Walmart", "Target", "Starbucks", "McDonald's", "Uber", "Netflix", "Spotify"]
-            locations = ["New York, NY", "Los Angeles, CA", "Chicago, IL", "Houston, TX", "Phoenix, AZ"]
-            
             transaction = {
                 "id": transaction_id,
                 "user_id": sender_user.get("id", "unknown"),
@@ -285,8 +276,7 @@ class TransactionGeneratorService:
                 "amount": round(amount, 2),
                 "currency": "INR",
                 "transaction_type": transaction_type,
-                "merchant": random.choice(merchants),
-                "location": random.choice(locations),
+                "location": random.choice(self.normal_locations),
                 "timestamp": datetime.now().isoformat(),
                 "status": "completed",
                 "receiver_user_id": receiver_user.get("id", "unknown"),
@@ -459,7 +449,7 @@ class TransactionGeneratorService:
                 if sender_account_vertex and receiver_account_vertex:
                     # Create transaction vertex
                     def create_transaction_vertex():
-                        return self.graph_service.client.add_v("transaction").property("transaction_id", transaction['id']).property("amount", transaction['amount']).property("currency", transaction['currency']).property("timestamp", transaction['timestamp']).property("location", transaction.get('location', 'Unknown')).property("type", transaction['transaction_type']).property("merchant", transaction.get('merchant', 'Unknown')).property("status", transaction.get('status', 'completed')).next()
+                        return self.graph_service.client.add_v("transaction").property("transaction_id", transaction['id']).property("amount", transaction['amount']).property("currency", transaction['currency']).property("timestamp", transaction['timestamp']).property("location", transaction.get('location', 'Unknown')).property("type", transaction['transaction_type']).property("status", transaction.get('status', 'completed')).next()
                     
                     transaction_vertex = await loop.run_in_executor(None, create_transaction_vertex)
                     

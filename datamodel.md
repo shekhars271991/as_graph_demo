@@ -46,7 +46,7 @@ This document defines the vertices and edges used in a graph database for modeli
   - `location` (string) - Geographic location of the transaction
   - `fraud_score` (float) - Fraud risk score for this transaction
   - `type` (string) - Transaction type (e.g., "transfer", "payment", "deposit", "withdrawal")
-  - `merchant` (string) - Merchant name where transaction occurred
+  
   - `status` (string) - Transaction status (e.g., "completed", "pending")
   - `is_fraud` (boolean) - Whether this transaction is flagged as fraudulent
   - `fraud_type` (string) - Type of fraud if detected (optional)

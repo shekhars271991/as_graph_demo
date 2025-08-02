@@ -108,19 +108,14 @@ class TransactionGeneratorService:
         # Indian fraud locations
         self.indian_fraud_locations = ['Jamtara', 'Bharatpur', 'Alwar', 'Mewat', 'Nuh']
         
-        # Normal locations
+        # Normal locations (Indian cities)
         self.normal_locations = [
-            'New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia',
-            'San Antonio', 'San Diego', 'Dallas', 'San Jose', 'Austin', 'Jacksonville',
-            'Fort Worth', 'Columbus', 'Charlotte', 'San Francisco', 'Indianapolis',
-            'Seattle', 'Denver', 'Washington', 'Boston', 'El Paso', 'Nashville'
-        ]
-        
-        # Merchant categories
-        self.merchant_categories = [
-            'Retail', 'Restaurant', 'Gas Station', 'Online Shopping', 'Grocery Store',
-            'Entertainment', 'Transportation', 'Healthcare', 'Education', 'Travel',
-            'Technology', 'Fashion', 'Home & Garden', 'Sports', 'Books'
+            'Mumbai, Maharashtra', 'Delhi, Delhi', 'Bangalore, Karnataka', 'Hyderabad, Telangana', 
+            'Chennai, Tamil Nadu', 'Kolkata, West Bengal', 'Pune, Maharashtra', 'Ahmedabad, Gujarat',
+            'Jaipur, Rajasthan', 'Surat, Gujarat', 'Lucknow, Uttar Pradesh', 'Kanpur, Uttar Pradesh',
+            'Nagpur, Maharashtra', 'Visakhapatnam, Andhra Pradesh', 'Indore, Madhya Pradesh',
+            'Thane, Maharashtra', 'Bhopal, Madhya Pradesh', 'Patna, Bihar', 'Vadodara, Gujarat',
+            'Ghaziabad, Uttar Pradesh', 'Ludhiana, Punjab', 'Agra, Uttar Pradesh', 'Nashik, Maharashtra'
         ]
         
         # Transaction types

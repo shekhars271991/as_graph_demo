@@ -60,7 +60,7 @@ interface Transaction {
   fraud_status?: string
   fraud_reason?: string
   transaction_type?: string
-  merchant?: string
+
   location?: string
   is_fraud?: boolean
   fraud_type?: string
@@ -438,7 +438,7 @@ export default function UserDetailPage() {
                             <div>
                               <p className="font-semibold">Transaction {transaction.id.substring(0, 8)}...</p>
                               <p className="text-sm text-muted-foreground">
-                                {transaction.transaction_type || 'Transfer'} • {transaction.merchant || 'Unknown'}
+                                {transaction.transaction_type || 'Transfer'}
                               </p>
                               {transaction.location && (
                                 <p className="text-sm text-muted-foreground">

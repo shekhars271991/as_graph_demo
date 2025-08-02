@@ -879,7 +879,6 @@ class GraphService:
                             'status': transaction_props.get('status', 'completed'),
                             'fraud_score': fraud_score,
                             'transaction_type': transaction_props.get('type', 'transfer'),
-                            'merchant': transaction_props.get('merchant', 'Unknown'),
                             'is_fraud': is_fraud,
                             'fraud_status': fraud_status,
                             'fraud_reason': fraud_reason,
@@ -969,7 +968,6 @@ class GraphService:
                             'status': transaction_props.get('status', ['completed'])[0],
                             'fraud_score': 0.0,
                             'transaction_type': transaction_props.get('method', ['transfer'])[0],
-                            'merchant': 'Unknown',
                             'is_fraud': False,
                             'device_id': None
                         })
@@ -1396,7 +1394,6 @@ class GraphService:
                             'status': transaction_props.get('status', 'completed'),
                             'fraud_score': fraud_score,
                             'transaction_type': transaction_props.get('type', 'transfer'),
-                            'merchant': transaction_props.get('merchant', 'Unknown'),
                             'is_fraud': fraud_score >= 75,
                             'fraud_status': fraud_status,
                             'fraud_reason': fraud_reason,

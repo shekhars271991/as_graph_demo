@@ -39,7 +39,6 @@ interface Transaction {
   amount: number
   currency: string
   transaction_type: string
-  merchant: string
   location: string
   timestamp: string
   status: string
@@ -941,13 +940,13 @@ export default function AdminPage() {
                   <div className="flex items-center space-x-4">
                     <div className="text-right">
                       <div className="flex items-center space-x-1">
-                        <DollarSign className="w-3 h-3" />
+                        
                         <span className="font-medium">
                           ₹{transaction.amount.toFixed(2)}
                         </span>
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {transaction.merchant} • {transaction.location}
+                        {transaction.location}
                       </div>
                     </div>
                     

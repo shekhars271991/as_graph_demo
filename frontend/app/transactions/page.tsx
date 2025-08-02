@@ -22,7 +22,6 @@ interface Transaction {
   fraud_reason?: string
   is_fraud: boolean
   transaction_type: string
-  merchant: string
   device_id?: string
 }
 
