@@ -30,6 +30,9 @@ This document defines the vertices and edges used in a graph database for modeli
   - `status` (string) - Account status (default: "active")
   - `bank_name` (string) - Name of the bank (default: "Demo Bank")
   - `created_date` (datetime) - Date when account was created
+  - `fraudFlag` (boolean) - Whether account is flagged as fraudulent (optional)
+  - `flagReason` (string) - Reason for fraud flag (optional)
+  - `flagTimestamp` (datetime) - When account was flagged (optional)
 
 ---
 
@@ -71,7 +74,7 @@ This document defines the vertices and edges used in a graph database for modeli
 
 ---
 
-### 2. INITIATED
+### 2. TRANSFERS_TO (Transaction Level)
 - **From:** `account`
 - **To:** `transaction`
 - **Properties:** None
@@ -80,16 +83,16 @@ This document defines the vertices and edges used in a graph database for modeli
 
 ---
 
-### 3. RECEIVED
+### 3. TRANSFERS_FROM
 - **From:** `transaction`
 - **To:** `account`
 - **Properties:** None
 
-**Description:** Represents that a transaction was received by an account. This edge connects the transaction to the receiver account.
+**Description:** Represents that a transaction transfers money to an account. This edge connects the transaction to the receiver account.
 
 ---
 
-### 4. TRANSFERS_TO (Legacy - Used in Seeded Data Only)
+### 4. TRANSFERS_TO (Account Level)
 - **From:** `account`
 - **To:** `account`
 - **Properties:**
@@ -99,7 +102,26 @@ This document defines the vertices and edges used in a graph database for modeli
   - `status` (string) - Transfer status
   - `method` (string) - Transfer method
 
-**Description:** Direct transfer relationship between accounts (used only in initial data seeding, not in generated transactions).
+**Description:** Direct transfer relationship between accounts. Used for RT1 fraud detection to identify account-to-account transfer patterns.
+
+---
+
+### 5. flagged_by
+- **From:** `transaction`
+- **To:** `FraudCheckResult`
+- **Properties:** None
+
+**Description:** Links a transaction to its fraud check result. Created when RT1 fraud detection identifies a transaction as suspicious.
+
+### 4. FraudCheckResult
+- **Label:** `FraudCheckResult`
+- **Properties:**
+  - `fraud_score` (float) - Fraud risk score (0-100)
+  - `status` (string) - Status of fraud check ("review", "blocked", "cleared")
+  - `rule` (string) - Name of the fraud detection rule applied (e.g., "flaggedAccountsRule")
+  - `evaluation_timestamp` (datetime) - When the fraud check was performed
+  - `reason` (string) - Human-readable reason for the fraud flag
+  - `details` (string) - Additional details about the fraud check (JSON string)
 
 ---
 
@@ -108,8 +130,8 @@ This document defines the vertices and edges used in a graph database for modeli
 ### Transaction Model
 The transaction model uses a vertex-centric approach:
 
-1. **Sender Account** → **Transaction** (via `INITIATED` edge)
-2. **Transaction** → **Receiver Account** (via `RECEIVED` edge)
+1. **Sender Account** → **Transaction** (via `TRANSFERS_TO` edge)
+2. **Transaction** → **Receiver Account** (via `TRANSFERS_FROM` edge)
 
 This allows for:
 - Easy traversal to find all transactions initiated by an account
@@ -118,9 +140,31 @@ This allows for:
 - Support for complex fraud detection patterns
 
 ### Query Patterns
-- **Find sender of a transaction:** `V(transaction).in('INITIATED')`
-- **Find receiver of a transaction:** `V(transaction).out('RECEIVED')`
-- **Find all transactions sent by an account:** `V(account).out('INITIATED')`
-- **Find all transactions received by an account:** `V(account).in('RECEIVED')`
-- **Find all user's transactions:** `V(user).out('OWNS').both('INITIATED', 'RECEIVED')`
+- **Find sender of a transaction:** `V(transaction).in('TRANSFERS_TO')`
+- **Find receiver of a transaction:** `V(transaction).out('TRANSFERS_FROM')`
+- **Find all transactions sent by an account:** `V(account).out('TRANSFERS_TO').has_label('transaction')`
+- **Find all transactions received by an account:** `V(account).in('TRANSFERS_FROM')`
+- **Find all user's transactions:** `V(user).out('OWNS').both('TRANSFERS_TO', 'TRANSFERS_FROM')`
+
+## RT1 Fraud Detection
+
+### RT1: Transaction to Flagged Account Rule
+
+The RT1 rule checks if a transaction's sender or receiver account has previously transferred money to any flagged account.
+
+**Detection Flow:**
+1. Transaction is generated and stored in graph with TRANSFERS_TO/TRANSFERS_FROM edges
+2. RT1 check runs immediately after storage
+3. System performs 1-hop lookup: `V(account).out('TRANSFERS_TO').has_label('account').has('fraudFlag', true)`
+4. If flagged connections found:
+   - Calculate fraud score (90-100 based on number of connections)
+   - Assign status ("review" or "blocked")
+   - Create `FraudCheckResult` vertex
+   - Create `flagged_by` edge from transaction to result
+
+**Test Setup:**
+1. Flag accounts: `POST /accounts/{account_id}/flag`
+2. Create transfer relationships: `POST /accounts/{from_account_id}/transfers-to/{to_account_id}`
+3. Generate transactions involving connected accounts
+4. View fraud results: `GET /fraud-results` or `GET /transaction/{id}/fraud-results`
 

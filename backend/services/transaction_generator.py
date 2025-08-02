@@ -95,12 +95,8 @@ class TransactionGeneratorService:
         self.is_running = False
         self.generation_rate = 1  # transactions per second
         self.generated_transactions = []
-        self.fraud_counter = 0
-        self.normal_counter = 0
+        self.transaction_counter = 0
         self.task = None
-        
-        # Fraud scenario tracking
-        self.fraud_scenarios_generated = {scenario: 0 for scenario in FraudScenario}
         
         # High-risk jurisdictions for international transfers
         self.high_risk_jurisdictions = ['Dubai', 'Bahrain', 'Thailand', 'Cayman Islands', 'Panama']
@@ -136,45 +132,30 @@ class TransactionGeneratorService:
             "transaction_id": transaction['id'],
             "user_id": transaction['user_id'],
             "account_id": transaction['account_id'],
+            "receiver_user_id": transaction.get('receiver_user_id'),
+            "receiver_account_id": transaction.get('receiver_account_id'),
             "amount": transaction['amount'],
             "currency": transaction['currency'],
             "transaction_type": transaction['transaction_type'],
             "merchant": transaction['merchant'],
             "location": transaction['location'],
-            "fraud_score": transaction['fraud_score'],
-            "is_fraud": transaction.get('is_fraud', False),
-            "fraud_type": transaction.get('fraud_type'),
-            "fraud_scenario": transaction.get('fraud_scenario'),
             "status": transaction['status']
         }
         
         # Log to main transaction log
         logger.info(f"{transaction_type}: {json.dumps(log_data, indent=2)}")
         
-        # Log to specific log files based on transaction type
-        if transaction.get('is_fraud'):
-            fraud_log_msg = f"ID: {transaction['id']} | Amount: ₹{transaction['amount']} | Type: {transaction['transaction_type']} | Scenario: {transaction.get('fraud_type', 'Unknown')} | Score: {transaction['fraud_score']:.1f}"
-            logger.info(f"FRAUD: {fraud_log_msg}")
-        else:
-            normal_log_msg = f"ID: {transaction['id']} | Amount: ₹{transaction['amount']} | Type: {transaction['transaction_type']} | Merchant: {transaction['merchant']} | Score: {transaction['fraud_score']:.1f}"
-            logger.info(f"NORMAL: {normal_log_msg}")
+        # Log basic transaction info
+        transaction_log_msg = f"ID: {transaction['id']} | Amount: ${transaction['amount']} | Type: {transaction['transaction_type']} | Merchant: {transaction['merchant']}"
+        logger.info(f"TRANSACTION: {transaction_log_msg}")
 
     def _log_statistics(self):
         """Log current statistics"""
-        total = self.normal_counter + self.fraud_counter
-        fraud_percentage = (self.fraud_counter / total * 100) if total > 0 else 0
-        
         stats_data = {
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "total_transactions": total,
-            "normal_transactions": self.normal_counter,
-            "fraud_transactions": self.fraud_counter,
-            "fraud_percentage": round(fraud_percentage, 2),
+            "total_transactions": self.transaction_counter,
             "generation_rate": self.generation_rate,
-            "is_running": self.is_running,
-            "fraud_scenarios": {
-                scenario.value: count for scenario, count in self.fraud_scenarios_generated.items() if count > 0
-            }
+            "is_running": self.is_running
         }
         
         stats_logger.info(f"STATISTICS: {json.dumps(stats_data, indent=2)}")
@@ -187,8 +168,7 @@ class TransactionGeneratorService:
             
         self.generation_rate = max(1, min(5, rate))  # Clamp between 1-5
         self.is_running = True
-        self.fraud_counter = 0
-        self.normal_counter = 0
+        self.transaction_counter = 0
         
         logger.info(f"🚀 Starting transaction generation at {self.generation_rate} transactions/second")
         stats_logger.info(f"START: Generation started at {self.generation_rate} txn/sec")
@@ -214,13 +194,9 @@ class TransactionGeneratorService:
             self.task = None
         
         logger.info("🛑 Transaction generation stopped")
-        logger.info(f"📊 Generated {self.normal_counter} normal and {self.fraud_counter} fraudulent transactions")
-        logger.info("🎯 Fraud scenario distribution:")
-        for scenario, count in self.fraud_scenarios_generated.items():
-            if count > 0:
-                logger.info(f"  📈 {scenario.value}: {count}")
+        logger.info(f"📊 Generated {self.transaction_counter} transactions")
         
-        stats_logger.info(f"STOP: Generation stopped. Total: {self.normal_counter + self.fraud_counter} transactions")
+        stats_logger.info(f"STOP: Generation stopped. Total: {self.transaction_counter} transactions")
         self._log_statistics()
         
         return True
@@ -238,6 +214,9 @@ class TransactionGeneratorService:
                 # Store transaction in graph database
                 await self._store_transaction_in_graph(transaction)
                 
+                # Run RT1 fraud detection after transaction is stored
+                await self._run_rt1_fraud_detection(transaction)
+                
                 # Keep only last 1000 transactions
                 if len(self.generated_transactions) > 1000:
                     self.generated_transactions = self.generated_transactions[-1000:]
@@ -246,7 +225,7 @@ class TransactionGeneratorService:
                 self._log_transaction(transaction)
                 
                 # Log statistics every 10 transactions
-                if (self.normal_counter + self.fraud_counter) % 10 == 0:
+                if self.transaction_counter % 10 == 0:
                     self._log_statistics()
                 
                 # Wait for next generation
@@ -257,24 +236,10 @@ class TransactionGeneratorService:
                 await asyncio.sleep(1)
 
     async def _generate_transaction(self) -> Dict[str, Any]:
-        """Generate a single transaction (normal or fraudulent)"""
-        # Decide if this should be a fraud transaction
-        should_generate_fraud = self._should_generate_fraud()
-        
-        if should_generate_fraud:
-            return await self._generate_fraud_transaction()
-        else:
-            return await self._generate_normal_transaction()
+        """Generate a single transaction (always normal - fraud detection happens post-transaction)"""
+        return await self._generate_normal_transaction()
 
-    def _should_generate_fraud(self) -> bool:
-        """Determine if we should generate a fraud transaction"""
-        # Generate fraud every 10-15 transactions
-        fraud_interval = random.randint(10, 15)
-        total_transactions = self.normal_counter + self.fraud_counter
-        
-        if total_transactions > 0 and total_transactions % fraud_interval == 0:
-            return True
-        return False
+
 
     async def _generate_normal_transaction(self) -> Dict[str, Any]:
         """Generate a normal transaction between real users and accounts"""
@@ -284,8 +249,8 @@ class TransactionGeneratorService:
             receiver_user = await self._get_random_user()
             
             if not sender_user or not receiver_user:
-                logger.warning("Could not get users from graph database, using fallback")
-                return self._generate_fallback_transaction()
+                logger.error("Could not get users from graph database. Cannot generate transaction without valid users.")
+                raise Exception("No valid users available in graph database for transaction generation")
             
             # Get account IDs from the users
             sender_account_id = None
@@ -324,10 +289,6 @@ class TransactionGeneratorService:
                 "location": random.choice(locations),
                 "timestamp": datetime.now().isoformat(),
                 "status": "completed",
-                "fraud_score": random.uniform(0.0, 0.3),  # Low fraud score for normal transactions
-                "is_fraud": False,
-                "fraud_type": None,
-                "fraud_scenario": None,
                 "receiver_user_id": receiver_user.get("id", "unknown"),
                 "receiver_account_id": receiver_account_id or "unknown"
             }
@@ -336,297 +297,18 @@ class TransactionGeneratorService:
             await self._store_transaction_in_graph(transaction)
             
             # Log and update counters
-            self._log_transaction(transaction, "NORMAL")
-            self.normal_counter += 1
+            self._log_transaction(transaction, "TRANSACTION")
+            self.transaction_counter += 1
             
             return transaction
             
         except Exception as e:
             logger.error(f"Error generating normal transaction: {e}")
-            return self._generate_fallback_transaction()
+            raise e
 
-    async def _generate_fraud_transaction(self) -> Dict[str, Any]:
-        """Generate a fraudulent transaction"""
-        self.fraud_counter += 1
-        
-        # Randomly select a fraud scenario
-        fraud_scenarios = [
-            self._generate_scenario_a_fraud,
-            self._generate_scenario_b_fraud,
-            self._generate_scenario_c_fraud,
-            self._generate_scenario_d_fraud,
-            self._generate_scenario_e_fraud,
-            self._generate_scenario_f_fraud,
-            self._generate_scenario_g_fraud,
-            self._generate_scenario_h_fraud
-        ]
-        
-        try:
-            # Get random users for fraud transaction
-            sender_user = await self._get_random_user()
-            receiver_user = await self._get_random_user()
-            
-            if not sender_user or not receiver_user:
-                logger.warning("Could not get users from graph database for fraud transaction")
-                return self._generate_fallback_transaction()
-            
-            # Select random fraud scenario
-            fraud_generator = random.choice(fraud_scenarios)
-            transaction = await fraud_generator()
-            
-            # Update transaction with real user data
-            transaction.update({
-                "user_id": sender_user.get("id", "unknown"),
-                "account_id": sender_user.get("account_id", "unknown"),
-                "receiver_user_id": receiver_user.get("id", "unknown"),
-                "receiver_account_id": receiver_user.get("account_id", "unknown"),
-                "is_fraud": True
-            })
-            
-            # Store in graph database
-            await self._store_transaction_in_graph(transaction)
-            
-            # Log fraud transaction
-            self._log_transaction(transaction, "FRAUD")
-            
-            return transaction
-            
-        except Exception as e:
-            logger.error(f"Error generating fraud transaction: {e}")
-            return self._generate_fallback_transaction()
 
-    async def _generate_scenario_a_fraud(self) -> Dict[str, Any]:
-        """Generate fraud for Scenario A: Multiple Small Credits → Large Debit"""
-        user_data = await self._get_random_user()
-        account = random.choice(user_data.get('accounts', []))
-        
-        # Generate multiple small credits first (simulate previous transactions)
-        small_credits = []
-        total_credits = 0
-        num_credits = random.randint(2, 5)
-        
-        for i in range(num_credits):
-            credit_amount = random.uniform(100, 500)
-            small_credits.append(credit_amount)
-            total_credits += credit_amount
-        
-        # Generate large debit that matches total credits
-        debit_amount = total_credits * random.uniform(0.9, 1.0)
-        
-        return {
-            'id': f"T{uuid.uuid4().hex[:8].upper()}",
-            'user_id': user_data['id'],
-            'account_id': account['id'],
-            'amount': round(debit_amount, 2),
-            'currency': 'USD',
-            'transaction_type': 'transfer',
-            'merchant': 'Online Transfer Service',
-            'location': random.choice(self.normal_locations),
-            'timestamp': datetime.now().isoformat(),
-            'status': 'completed',
-            'fraud_score': random.uniform(80, 95),
-            'fraud_details': {
-                'scenario': 'A',
-                'small_credits': [round(amt, 2) for amt in small_credits],
-                'total_credits': round(total_credits, 2),
-                'pattern': 'Multiple small credits followed by large debit'
-            }
-        }
 
-    async def _generate_scenario_b_fraud(self) -> Dict[str, Any]:
-        """Generate fraud for Scenario B: Large Credit → Structured Equal Debits"""
-        user_data = await self._get_random_user()
-        account = random.choice(user_data.get('accounts', []))
-        
-        # Large credit amount
-        credit_amount = random.uniform(10000, 50000)
-        debit_amount = credit_amount / 4  # Each debit is 1/4 of credit
-        
-        return {
-            'id': f"T{uuid.uuid4().hex[:8].upper()}",
-            'user_id': user_data['id'],
-            'account_id': account['id'],
-            'amount': round(debit_amount, 2),
-            'currency': 'USD',
-            'transaction_type': 'transfer',
-            'merchant': 'Money Transfer Service',
-            'location': random.choice(self.normal_locations),
-            'timestamp': datetime.now().isoformat(),
-            'status': 'completed',
-            'fraud_score': random.uniform(85, 98),
-            'fraud_details': {
-                'scenario': 'B',
-                'original_credit': round(credit_amount, 2),
-                'debit_number': random.randint(1, 4),
-                'pattern': 'Large credit followed by structured equal debits'
-            }
-        }
 
-    async def _generate_scenario_c_fraud(self) -> Dict[str, Any]:
-        """Generate fraud for Scenario C: Multiple Large ATM Withdrawals"""
-        user_data = await self._get_random_user()
-        account = random.choice(user_data.get('accounts', []))
-        
-        # Large ATM withdrawal
-        withdrawal_amount = random.uniform(100000, 1000000)
-        
-        return {
-            'id': f"T{uuid.uuid4().hex[:8].upper()}",
-            'user_id': user_data['id'],
-            'account_id': account['id'],
-            'amount': round(withdrawal_amount, 2),
-            'currency': 'USD',
-            'transaction_type': 'withdrawal',
-            'merchant': 'ATM Withdrawal',
-            'location': random.choice(self.normal_locations),
-            'timestamp': datetime.now().isoformat(),
-            'status': 'completed',
-            'fraud_score': random.uniform(75, 90),
-            'fraud_details': {
-                'scenario': 'C',
-                'withdrawal_number': random.randint(1, 5),
-                'pattern': 'Multiple large ATM withdrawals'
-            }
-        }
-
-    async def _generate_scenario_d_fraud(self) -> Dict[str, Any]:
-        """Generate fraud for Scenario D: High-Frequency Transfers Between Mule Accounts"""
-        user_data = await self._get_random_user()
-        account = random.choice(user_data.get('accounts', []))
-        
-        # High-frequency transfer
-        transfer_amount = random.uniform(500, 5000)
-        
-        return {
-            'id': f"T{uuid.uuid4().hex[:8].upper()}",
-            'user_id': user_data['id'],
-            'account_id': account['id'],
-            'amount': round(transfer_amount, 2),
-            'currency': 'USD',
-            'transaction_type': 'transfer',
-            'merchant': 'Peer-to-Peer Transfer',
-            'location': random.choice(self.normal_locations),
-            'timestamp': datetime.now().isoformat(),
-            'status': 'completed',
-            'fraud_score': random.uniform(80, 95),
-            'fraud_details': {
-                'scenario': 'D',
-                'transfer_number': random.randint(1, 15),
-                'pattern': 'High-frequency transfers between mule accounts'
-            }
-        }
-
-    async def _generate_scenario_e_fraud(self) -> Dict[str, Any]:
-        """Generate fraud for Scenario E: Salary-Like Deposits → Suspicious Transfers"""
-        user_data = await self._get_random_user()
-        account = random.choice(user_data.get('accounts', []))
-        
-        # Suspicious transfer after salary-like deposit
-        transfer_amount = random.uniform(5000, 7000)
-        
-        return {
-            'id': f"T{uuid.uuid4().hex[:8].upper()}",
-            'user_id': user_data['id'],
-            'account_id': account['id'],
-            'amount': round(transfer_amount, 2),
-            'currency': 'USD',
-            'transaction_type': 'transfer',
-            'merchant': 'Online Banking Transfer',
-            'location': random.choice(self.normal_locations),
-            'timestamp': datetime.now().isoformat(),
-            'status': 'completed',
-            'fraud_score': random.uniform(75, 90),
-            'fraud_details': {
-                'scenario': 'E',
-                'transfer_number': random.randint(1, 5),
-                'pattern': 'Salary-like deposits followed by suspicious transfers'
-            }
-        }
-
-    async def _generate_scenario_f_fraud(self) -> Dict[str, Any]:
-        """Generate fraud for Scenario F: Dormant Account Sudden Activity"""
-        user_data = await self._get_random_user()
-        account = random.choice(user_data.get('accounts', []))
-        
-        # Large transaction after dormancy
-        transaction_amount = random.uniform(10000, 50000)
-        
-        return {
-            'id': f"T{uuid.uuid4().hex[:8].upper()}",
-            'user_id': user_data['id'],
-            'account_id': account['id'],
-            'amount': round(transaction_amount, 2),
-            'currency': 'USD',
-            'transaction_type': 'transfer',
-            'merchant': 'Account Transfer Service',
-            'location': random.choice(self.normal_locations),
-            'timestamp': datetime.now().isoformat(),
-            'status': 'completed',
-            'fraud_score': random.uniform(85, 98),
-            'fraud_details': {
-                'scenario': 'F',
-                'dormancy_days': random.randint(30, 365),
-                'pattern': 'Dormant account sudden activity'
-            }
-        }
-
-    async def _generate_scenario_g_fraud(self) -> Dict[str, Any]:
-        """Generate fraud for Scenario G: International Transfers to High-Risk Jurisdictions"""
-        user_data = await self._get_random_user()
-        account = random.choice(user_data.get('accounts', []))
-        
-        # International transfer to high-risk jurisdiction
-        transfer_amount = random.uniform(500, 5000)
-        jurisdiction = random.choice(self.high_risk_jurisdictions)
-        
-        return {
-            'id': f"T{uuid.uuid4().hex[:8].upper()}",
-            'user_id': user_data['id'],
-            'account_id': account['id'],
-            'amount': round(transfer_amount, 2),
-            'currency': 'USD',
-            'transaction_type': 'transfer',
-            'merchant': 'International Transfer Service',
-            'location': jurisdiction,
-            'timestamp': datetime.now().isoformat(),
-            'status': 'completed',
-            'fraud_score': random.uniform(90, 100),
-            'fraud_details': {
-                'scenario': 'G',
-                'jurisdiction': jurisdiction,
-                'transfer_number': random.randint(1, 10),
-                'pattern': 'International transfers to high-risk jurisdictions'
-            }
-        }
-
-    async def _generate_scenario_h_fraud(self) -> Dict[str, Any]:
-        """Generate fraud for Scenario H: Region-Specific Fraud (Indian Context)"""
-        user_data = await self._get_random_user()
-        account = random.choice(user_data.get('accounts', []))
-        
-        # Large transfer from Indian fraud location
-        transfer_amount = random.uniform(10000, 50000)
-        fraud_location = random.choice(self.indian_fraud_locations)
-        
-        return {
-            'id': f"T{uuid.uuid4().hex[:8].upper()}",
-            'user_id': user_data['id'],
-            'account_id': account['id'],
-            'amount': round(transfer_amount, 2),
-            'currency': 'USD',
-            'transaction_type': 'transfer',
-            'merchant': 'Regional Transfer Service',
-            'location': fraud_location,
-            'timestamp': datetime.now().isoformat(),
-            'status': 'completed',
-            'fraud_score': random.uniform(85, 98),
-            'fraud_details': {
-                'scenario': 'H',
-                'fraud_location': fraud_location,
-                'transfer_number': random.randint(1, 5),
-                'pattern': 'Region-specific fraud (Indian context)'
-            }
-        }
 
     async def _get_random_user(self) -> Optional[Dict[str, Any]]:
         """Get a random user from the graph database"""
@@ -654,24 +336,89 @@ class TransactionGeneratorService:
             logger.error(f"Error getting random account: {e}")
             return None
 
-    def _generate_fallback_transaction(self) -> Dict[str, Any]:
-        """Generate a fallback transaction when no users are available"""
-        return {
-            'id': f"T{uuid.uuid4().hex[:8].upper()}",
-            'user_id': 'U000',
-            'account_id': 'A000',
-            'amount': round(random.uniform(10, 1000), 2),
-            'currency': 'USD',
-            'transaction_type': 'purchase',
-            'merchant': 'Generic Store',
-            'location': 'Unknown',
-            'timestamp': datetime.now().isoformat(),
-            'status': 'completed',
-            'fraud_score': random.uniform(0, 30),
-            'fraud_type': None,
-            'fraud_scenario': None,
-            'is_fraud': False
-        }
+
+
+    async def _run_rt1_fraud_detection(self, transaction: Dict[str, Any]):
+        """Run RT1 fraud detection: Check if transaction involves flagged accounts"""
+        try:
+            if not self.graph_service.client:
+                logger.warning("No graph client available for RT1 fraud detection")
+                return
+                
+            loop = asyncio.get_event_loop()
+            
+            # Check if sender or receiver account is connected to flagged accounts
+            def check_flagged_connections():
+                try:
+                    sender_account_id = transaction['account_id']
+                    receiver_account_id = transaction.get('receiver_account_id')
+                    
+                    flagged_connections = []
+                    
+                    # Check sender account connections to flagged accounts (1-hop direct TRANSFERS_TO)
+                    if sender_account_id and sender_account_id != 'unknown':
+                        sender_flagged = self.graph_service.client.V().has_label("account").has("account_id", sender_account_id).out("TRANSFERS_TO").has_label("account").has("fraudFlag", True).to_list()
+                        if sender_flagged:
+                            flagged_connections.append({"account": sender_account_id, "role": "sender", "flagged_connections": len(sender_flagged)})
+                    
+                    # Check receiver account connections to flagged accounts (1-hop direct TRANSFERS_TO)
+                    if receiver_account_id and receiver_account_id != 'unknown':
+                        receiver_flagged = self.graph_service.client.V().has_label("account").has("account_id", receiver_account_id).out("TRANSFERS_TO").has_label("account").has("fraudFlag", True).to_list()
+                        if receiver_flagged:
+                            flagged_connections.append({"account": receiver_account_id, "role": "receiver", "flagged_connections": len(receiver_flagged)})
+                    
+                    return flagged_connections
+                    
+                except Exception as e:
+                    logger.error(f"Error checking flagged connections: {e}")
+                    return []
+            
+            flagged_connections = await loop.run_in_executor(None, check_flagged_connections)
+            
+            # If flagged connections found, create fraud check result
+            if flagged_connections:
+                fraud_score = min(90 + len(flagged_connections) * 5, 100)  # Score 90-100 based on number of connections
+                status = "blocked" if fraud_score >= 95 else "review"
+                reason = f"Connected to {len(flagged_connections)} flagged account(s)"
+                
+                await self._create_fraud_check_result(transaction, fraud_score, status, reason, flagged_connections)
+                logger.warning(f"🚨 RT1 FRAUD DETECTED: Transaction {transaction['id']} - {reason} (Score: {fraud_score})")
+            else:
+                logger.info(f"✅ RT1 CHECK PASSED: Transaction {transaction['id']} - No flagged account connections")
+                
+        except Exception as e:
+            logger.error(f"❌ Error in RT1 fraud detection for transaction {transaction.get('id', 'unknown')}: {e}")
+
+    async def _create_fraud_check_result(self, transaction: Dict[str, Any], fraud_score: float, status: str, reason: str, details: List[Dict]):
+        """Create FraudCheckResult vertex and flagged_by edge"""
+        try:
+            if not self.graph_service.client:
+                return
+                
+            loop = asyncio.get_event_loop()
+            
+            def create_fraud_result():
+                try:
+                    # Find the transaction vertex
+                    transaction_vertex = self.graph_service.client.V().has_label("transaction").has("transaction_id", transaction['id']).next()
+                    
+                    # Create FraudCheckResult vertex
+                    fraud_result_vertex = self.graph_service.client.add_v("FraudCheckResult").property("fraud_score", fraud_score).property("status", status).property("rule", "flaggedAccountsRule").property("evaluation_timestamp", datetime.now().isoformat()).property("reason", reason).property("details", str(details)).next()
+                    
+                    # Create flagged_by edge from transaction to fraud result
+                    self.graph_service.client.add_e("flagged_by").from_(transaction_vertex).to(fraud_result_vertex).iterate()
+                    
+                    logger.info(f"📊 Created FraudCheckResult for transaction {transaction['id']}: {status} (Score: {fraud_score})")
+                    return True
+                    
+                except Exception as e:
+                    logger.error(f"Error creating fraud check result: {e}")
+                    return False
+            
+            await loop.run_in_executor(None, create_fraud_result)
+            
+        except Exception as e:
+            logger.error(f"❌ Error creating fraud check result for transaction {transaction.get('id', 'unknown')}: {e}")
 
     async def _store_transaction_in_graph(self, transaction: Dict[str, Any]):
         """Store transaction in the graph database"""
@@ -712,17 +459,17 @@ class TransactionGeneratorService:
                 if sender_account_vertex and receiver_account_vertex:
                     # Create transaction vertex
                     def create_transaction_vertex():
-                        return self.graph_service.client.add_v("transaction").property("transaction_id", transaction['id']).property("amount", transaction['amount']).property("currency", transaction['currency']).property("timestamp", transaction['timestamp']).property("location", transaction.get('location', 'Unknown')).property("fraud_score", transaction.get('fraud_score', 0.0)).property("type", transaction['transaction_type']).property("merchant", transaction.get('merchant', 'Unknown')).property("status", transaction.get('status', 'completed')).property("is_fraud", transaction.get('is_fraud', False)).property("fraud_type", transaction.get('fraud_type', '')).property("fraud_scenario", transaction.get('fraud_scenario', '')).next()
+                        return self.graph_service.client.add_v("transaction").property("transaction_id", transaction['id']).property("amount", transaction['amount']).property("currency", transaction['currency']).property("timestamp", transaction['timestamp']).property("location", transaction.get('location', 'Unknown')).property("type", transaction['transaction_type']).property("merchant", transaction.get('merchant', 'Unknown')).property("status", transaction.get('status', 'completed')).next()
                     
                     transaction_vertex = await loop.run_in_executor(None, create_transaction_vertex)
                     
                     # Create edge from sender account to transaction
                     def create_sender_edge():
-                        return self.graph_service.client.add_e("INITIATED").from_(sender_account_vertex).to(transaction_vertex).iterate()
+                        return self.graph_service.client.add_e("TRANSFERS_TO").from_(sender_account_vertex).to(transaction_vertex).iterate()
                     
                     # Create edge from transaction to receiver account
                     def create_receiver_edge():
-                        return self.graph_service.client.add_e("RECEIVED").from_(transaction_vertex).to(receiver_account_vertex).iterate()
+                        return self.graph_service.client.add_e("TRANSFERS_FROM").from_(transaction_vertex).to(receiver_account_vertex).iterate()
                     
                     await loop.run_in_executor(None, create_sender_edge)
                     await loop.run_in_executor(None, create_receiver_edge)
@@ -748,8 +495,7 @@ class TransactionGeneratorService:
             "status": "running" if self.is_running else "stopped",
             "generation_rate": self.generation_rate,
             "total_generated": len(self.generated_transactions),
-            "fraud_count": self.fraud_counter,
-            "normal_count": self.normal_counter,
+            "transaction_count": self.transaction_counter,
             "last_10_transactions": self.get_recent_transactions(10)
         }
 
@@ -759,9 +505,7 @@ class TransactionGeneratorService:
             "is_running": self.is_running,
             "generation_rate": self.generation_rate,
             "total_generated": len(self.generated_transactions),
-            "fraud_count": self.fraud_counter,
-            "normal_count": self.normal_counter,
-            "fraud_percentage": (self.fraud_counter / len(self.generated_transactions) * 100) if self.generated_transactions else 0
+            "transaction_count": self.transaction_counter
         }
 
 # Global instance

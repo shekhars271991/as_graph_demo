@@ -1,164 +1,160 @@
-# Fraud Detection Scenarios Plan
+# Fraud Detection PoC Plan (Graph-Driven)
 
 ## Overview
-This document outlines the fraud detection scenarios that will be implemented in the Aerospike Graph-based fraud detection system. Each scenario represents a specific pattern of suspicious financial activity that could indicate fraudulent behavior.
 
-## Scenario A: Multiple Small Credits Followed by Large Debit
-**Pattern Description:** A sophisticated money laundering technique where an account receives multiple small credit transactions followed by a single large debit transaction.
-
-**Key Indicators:**
-- Multiple credit transactions occur within a 24-hour window before the debit
-- Total amount of credits approximately equals the debit amount (90-100% match)
-- At least 2 credit transactions are involved
-- The pattern suggests structured deposits to avoid detection thresholds
-
-**Risk Level:** High
-**Common Use Case:** Money laundering, structuring transactions to avoid reporting requirements
+This document outlines a hybrid fraud detection approach leveraging Aerospike Graph DB, demonstrating both real-time and batch-based detection. The goal is to showcase the power of graph traversal, pattern recognition, and risk scoring using transaction data.
 
 ---
 
-## Scenario B: Large Credit Followed by Structured Equal Debits
-**Pattern Description:** A pattern where a large credit is immediately followed by exactly 4 equal-sized debit transactions, typically indicating money distribution to multiple accounts.
+## 🎯 Goals
 
-**Key Indicators:**
-- One large credit transaction ($10,000-$50,000)
-- Followed by exactly 4 equal-sized debits within 4 hours
-- Each debit is approximately 1/4 of the original credit amount
-- All debits are directed to the same destination account
-- Suggests organized distribution of funds
-
-**Risk Level:** High
-**Common Use Case:** Money mule operations, organized fraud rings
+* Highlight **graph traversal capabilities** for fraud detection
+* Split detection into **Realtime (low-latency)** and **Batch (deep pattern mining)**
+* Use **graph-native queries** to uncover suspicious patterns
 
 ---
 
-## Scenario C: Multiple Large ATM Withdrawals
-**Pattern Description:** A pattern of multiple large ATM withdrawals that could indicate cash extraction for illicit purposes.
+## 🔁 Detection Modes
 
-**Key Indicators:**
-- 3 or more ATM withdrawal transactions
-- Each withdrawal between $5,000-$10,000
-- Self-directed transactions (account holder withdrawing from their own account)
-- Suggests systematic cash extraction
+### Realtime Detection
 
-**Risk Level:** Medium-High
-**Common Use Case:** Cash extraction for money laundering, avoiding digital trails
+**Objective:** Assess each incoming transaction using:
 
----
+* 1–2 hop graph lookups
+* Cached fraud scores
+* Lightweight risk signals
 
-## Scenario D: High-Frequency Transfers Between Mule Accounts
-**Pattern Description:** Rapid-fire transactions between multiple accounts, indicating money mule activity or account takeover.
+### Batch Detection
 
-**Key Indicators:**
-- 10 or more transactions within a short time period
-- Transaction amounts between $500-$5,000 each
-- Mix of credit and debit transactions within 1-hour windows
-- High velocity of money movement
-- Suggests coordinated account activity
+**Objective:** Periodic scan of full transaction graph to:
 
-**Risk Level:** High
-**Common Use Case:** Money mule networks, account takeover fraud, rapid money movement
+* Identify multi-transaction and multi-hop fraud patterns
+* Score accounts based on graph analytics
 
 ---
 
-## Scenario E: Salary-Like Deposits Followed by Suspicious Transfers
-**Pattern Description:** A pattern mimicking legitimate salary deposits but followed by suspicious outgoing transfers.
+## 🧩 Scenario Categorization
 
-**Key Indicators:**
-- Initial credit transaction resembling salary ($5,000-$10,000)
-- Followed by 3 or more outgoing transfers
-- Transfer amounts between $5,000-$7,000 each
-- Suggests account takeover or identity theft
-
-**Risk Level:** Medium-High
-**Common Use Case:** Account takeover, identity theft, fraudulent salary deposits
-
----
-
-## Scenario F: Dormant Account Sudden Activity
-**Pattern Description:** A previously inactive account suddenly receives a large deposit followed by structured withdrawals.
-
-**Key Indicators:**
-- Account shows no activity for an extended period (30+ days)
-- Sudden large credit transaction ($10,000-$50,000)
-- Followed by exactly 4 equal debit transactions
-- Total debits approximately equal the credit amount
-- Suggests account compromise or takeover
-
-**Risk Level:** High
-**Common Use Case:** Account takeover, dormant account exploitation, identity theft
+| Scenario ID | Description                          | Graph Use              | Detection Mode | Notes                              |
+| ----------- | ------------------------------------ | ---------------------- | -------------- | ---------------------------------- |
+| RT1         | Transaction to flagged account       | 1-hop lookup           | Realtime       | Immediate threat detection         |
+| RT2         | Repeated small ring interactions     | 2-hop neighborhood     | Realtime       | Identify mule rings                |
+| RT3         | Supernode detection (high-degree)    | Centrality check       | Realtime       | Alert on highly connected accounts |
+| RT4         | High-risk batch score                | Vertex property lookup | Realtime       | Use batch score inline             |
+| BT1         | Multiple small credits → large debit | Time window path sum   | Batch          | Pattern A (structuring)            |
+| BT2         | 1 large credit → 4 equal debits      | Fan-out structure      | Batch          | Pattern B                          |
+| BT3         | Dormant account → sudden activity    | Temporal + path        | Batch          | Pattern F                          |
+| BT4         | 3-hop transfer in short time         | Timed path             | Batch          | Rapid hops between accounts        |
+| BT5         | Circular transactions                | Cycle detection        | Batch          | Detect fraud rings                 |
+| BT6         | Region-based risky connections       | Geo-tagged edges       | Batch          | Pattern H (India-specific)         |
 
 ---
 
-## Scenario G: International Transfers to High-Risk Jurisdictions
-**Pattern Description:** Multiple transfers to specific international locations known for financial crime or money laundering.
+## 🛠 Realtime Detection Plan
 
-**Key Indicators:**
-- 5 or more international transfer transactions
-- Transfer amounts between $500-$5,000 each
-- Destinations include high-risk jurisdictions (Dubai, Bahrain, Thailand)
-- Suggests international money laundering networks
+### Flow:
 
-**Risk Level:** High
-**Common Use Case:** International money laundering, terrorist financing, cross-border fraud
+1. Receive transaction via API
+2. Lookup `fraud_score:{account_id}`
+3. Run 1-hop Gremlin query:
+
+```gremlin
+g.V(account_id).out('transfers_to').has('flagged', true).limit(1)
+```
+
+4. Optionally check:
+
+```gremlin
+g.V(account_id).out('transfers_to').groupCount().unfold().count()
+```
+
+5. Compute risk score and flag if threshold is crossed
+
+### Fast Signals:
+
+* Connection to known fraudsters
+* Abnormally high out-degree
+* Cached fraud score from batch
 
 ---
 
-## Scenario H: Region-Specific Fraud (Indian Context)
-**Pattern Description:** Fraud patterns specific to the Indian financial landscape, targeting known fraud-prone regions.
+## 🗃 Batch Detection Plan
 
-**Key Indicators:**
-- 3 or more large transfer transactions
-- Transfer amounts between $10,000-$50,000
-- Originating from specific high-risk locations (Jamtara, Bharatpur, Alwar)
-- Transactions flagged with fraud indicators
-- Region-specific fraud patterns
+### Flow:
 
-**Risk Level:** High
-**Common Use Case:** Regional fraud networks, location-based scams, organized crime
+1. Ingest all transactions (past 1–6 hrs)
+2. Traverse the graph to:
+
+   * Find multi-hop suspicious paths
+   * Detect cycles
+   * Identify fan-out / structuring
+3. Annotate vertex properties:
+
+   * `fraud_score`
+   * `cycle_score`
+   * `dormancy_flag`
+4. Persist results for realtime lookup
+
+### Example Queries:
+
+**BT4 - Money hop in 3 hops within 1 hour**
+
+```gremlin
+g.V().hasLabel('account')
+ .repeat(__.outE('transfers_to').has('timestamp', P.gt(cutoff)).inV())
+ .times(3)
+ .path()
+ .limit(100)
+```
+
+**BT5 - Cycle detection**
+
+```gremlin
+g.V().hasLabel('account')
+ .repeat(__.out('transfers_to').simplePath()).emit().times(4)
+ .where(__.loops().is(P.gte(3)))
+ .path()
+```
 
 ---
 
-## Implementation Priority
+## 📊 Visualization (Optional but Recommended)
 
-### Phase 1 (High Priority)
-- Scenario A: Multiple Small Credits Followed by Large Debit
-- Scenario B: Large Credit Followed by Structured Equal Debits
-- Scenario D: High-Frequency Transfers Between Mule Accounts
+* Use D3.js or Vis.js to show:
 
-### Phase 2 (Medium Priority)
-- Scenario C: Multiple Large ATM Withdrawals
-- Scenario E: Salary-Like Deposits Followed by Suspicious Transfers
-- Scenario F: Dormant Account Sudden Activity
+  * Flagged account neighborhood
+  * Suspicious path traversals
+  * Heatmap of fraud clusters
 
-### Phase 3 (Lower Priority)
-- Scenario G: International Transfers to High-Risk Jurisdictions
-- Scenario H: Region-Specific Fraud (Indian Context)
+---
 
-## Technical Considerations
+## 📦 PoC Deliverables
 
-### Data Requirements
-- Transaction timestamps with millisecond precision
-- Transaction amounts and types (credit/debit)
-- Account identifiers and relationships
-- Geographic location data
-- Transaction metadata (ATM withdrawals, international transfers)
+### Backend
 
-### Performance Considerations
-- Time-window based queries for pattern detection
-- Efficient graph traversal for account relationships
-- Real-time processing capabilities
-- Scalable pattern matching algorithms
+* Realtime fraud scoring API (Python)
+* Batch fraud scoring job (Python/Cron/Airflow)
+* Graph queries integrated via Gremlin
 
-### Monitoring and Alerting
-- Real-time fraud score calculation
-- Configurable threshold adjustments
-- Alert prioritization based on risk levels
-- False positive reduction mechanisms
+### Data
 
-## Success Metrics
-- Detection accuracy (true positive rate)
-- False positive rate reduction
-- Processing latency for real-time detection
-- Coverage of known fraud patterns
-- Adaptability to new fraud patterns 
+* Simulated transactions (with fraud seeds)
+* Seed graph with users, accounts, and edges
+
+### Frontend (Optional)
+
+* Dashboard: flagged transactions, scores, graphs
+* Account drill-down: neighbors, transactions, alerts
+
+---
+
+## ✅ Summary
+
+| Type     | Scenario | Graph Query             | Action           |
+| -------- | -------- | ----------------------- | ---------------- |
+| Realtime | RT1      | 1-hop lookup            | Flag transaction |
+| Realtime | RT2      | 2-hop cycle             | Warn user        |
+| Batch    | BT1      | Path + timestamp filter | Score account    |
+| Batch    | BT5      | Cycle detection         | Label fraud ring |
+
+This plan helps demonstrate how graph DB enables both **responsive fraud detection** and **deep pattern mining**, critical for modern financial systems.

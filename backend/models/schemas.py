@@ -17,6 +17,11 @@ class FraudRiskLevel(str, Enum):
     HIGH = "high"
     CRITICAL = "critical"
 
+class FraudCheckStatus(str, Enum):
+    REVIEW = "review"
+    BLOCKED = "blocked"
+    CLEARED = "cleared"
+
 class User(BaseModel):
     id: str
     name: str
@@ -46,6 +51,14 @@ class Transaction(BaseModel):
     device_id: Optional[str] = None
     status: TransactionStatus = TransactionStatus.COMPLETED
     fraud_score: float = Field(ge=0, le=100, default=0.0)
+
+class FraudCheckResult(BaseModel):
+    fraud_score: float = Field(ge=0, le=100)
+    status: FraudCheckStatus
+    rule: str  # e.g., "flaggedAccountsRule"
+    evaluation_timestamp: datetime
+    reason: str
+    details: Optional[str] = None  # JSON string of additional details
 
 class UserSummary(BaseModel):
     user: User

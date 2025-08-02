@@ -354,6 +354,103 @@ async def get_recent_transactions(limit: int = Query(10, ge=1, le=100, descripti
         logger.error(f"❌ Failed to get recent transactions: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get recent transactions: {str(e)}")
 
+@app.post("/accounts/{account_id}/flag")
+async def flag_account(account_id: str, reason: str = "Manual flag for testing"):
+    """Flag an account as fraudulent for RT1 testing"""
+    try:
+        result = await graph_service.flag_account(account_id, reason)
+        if result:
+            return {
+                "message": f"Account {account_id} flagged successfully",
+                "account_id": account_id,
+                "reason": reason,
+                "timestamp": datetime.now().isoformat()
+            }
+        else:
+            raise HTTPException(status_code=404, detail="Account not found")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Failed to flag account {account_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to flag account: {str(e)}")
+
+@app.delete("/accounts/{account_id}/flag")
+async def unflag_account(account_id: str):
+    """Remove fraud flag from an account"""
+    try:
+        result = await graph_service.unflag_account(account_id)
+        if result:
+            return {
+                "message": f"Account {account_id} unflagged successfully",
+                "account_id": account_id,
+                "timestamp": datetime.now().isoformat()
+            }
+        else:
+            raise HTTPException(status_code=404, detail="Account not found")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Failed to unflag account {account_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to unflag account: {str(e)}")
+
+@app.get("/accounts/flagged")
+async def get_flagged_accounts():
+    """Get list of all flagged accounts"""
+    try:
+        flagged_accounts = await graph_service.get_flagged_accounts()
+        return {
+            "flagged_accounts": flagged_accounts,
+            "count": len(flagged_accounts)
+        }
+    except Exception as e:
+        logger.error(f"❌ Failed to get flagged accounts: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get flagged accounts: {str(e)}")
+
+@app.get("/fraud-results")
+async def get_fraud_results(page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100)):
+    """Get paginated list of fraud check results"""
+    try:
+        results = await graph_service.get_fraud_check_results_paginated(page, page_size)
+        return results
+    except Exception as e:
+        logger.error(f"❌ Failed to get fraud results: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get fraud results: {str(e)}")
+
+@app.get("/transaction/{transaction_id}/fraud-results")
+async def get_transaction_fraud_results(transaction_id: str):
+    """Get fraud check results for a specific transaction"""
+    try:
+        results = await graph_service.get_transaction_fraud_results(transaction_id)
+        return {
+            "transaction_id": transaction_id,
+            "fraud_results": results,
+            "count": len(results)
+        }
+    except Exception as e:
+        logger.error(f"❌ Failed to get fraud results for transaction {transaction_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get transaction fraud results: {str(e)}")
+
+@app.post("/accounts/{from_account_id}/transfers-to/{to_account_id}")
+async def create_transfer_relationship(from_account_id: str, to_account_id: str, amount: float = 1000.0):
+    """Create a TRANSFERS_TO edge between accounts for testing RT1"""
+    try:
+        result = await graph_service.create_transfer_relationship(from_account_id, to_account_id, amount)
+        if result:
+            return {
+                "message": f"Transfer relationship created: {from_account_id} → {to_account_id}",
+                "from_account": from_account_id,
+                "to_account": to_account_id,
+                "amount": amount,
+                "timestamp": datetime.now().isoformat()
+            }
+        else:
+            raise HTTPException(status_code=404, detail="One or both accounts not found")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Failed to create transfer relationship: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create transfer relationship: {str(e)}")
+
 if __name__ == "__main__":
     args = parse_arguments() # Parse arguments here
     logger.info(f"Parsed arguments: delete={args.delete}, load_users={args.load_users}, host={args.host}, port={args.port}")

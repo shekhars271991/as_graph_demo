@@ -200,10 +200,13 @@ class GraphService:
                                             # Create transaction vertex
                                             transaction_vertex = self.client.add_v("transaction").property("transaction_id", transaction_id).property("amount", amount).property("timestamp", datetime.now().isoformat()).property("status", "completed").property("method", "transfer").property("ip_address", f"192.168.{random.randint(1,255)}.{random.randint(1,255)}").property("location_city", user_data['location']).property("location_country", "India").property("latitude", random.uniform(8.0, 37.0)).property("longitude", random.uniform(68.0, 97.0)).next()
                                             
-                                            # Create INITIATED edge from source account to transaction
-                                            self.client.add_e("INITIATED").from_(source_account).to(transaction_vertex).iterate()
+                                            # Create TRANSFERS_TO edge from source account to transaction
+                                            self.client.add_e("TRANSFERS_TO").from_(source_account).to(transaction_vertex).iterate()
                                             
-                                            # Create TRANSFERS_TO edge from source account to destination account
+                                            # Create TRANSFERS_FROM edge from transaction to destination account
+                                            self.client.add_e("TRANSFERS_FROM").from_(transaction_vertex).to(destination_account).iterate()
+                                            
+                                            # Also create direct TRANSFERS_TO edge from source account to destination account (for RT1 detection)
                                             self.client.add_e("TRANSFERS_TO").from_(source_account).to(destination_account).property("transaction_id", transaction_id).property("amount", amount).property("timestamp", datetime.now().isoformat()).property("status", "completed").property("method", "transfer").iterate()
                                             
                                             return transaction_vertex
@@ -781,8 +784,8 @@ class GraphService:
                         try:
                             logger.info(f"Looking for sender account that initiated transaction {transaction_props.get('transaction_id', 'unknown')}")
                             
-                            # Try to find the sender account using the INITIATED edge
-                            sender_account_vertices = self.client.V(transaction_vertex).in_("INITIATED").to_list()
+                            # Try to find the sender account using the TRANSFERS_TO edge
+                            sender_account_vertices = self.client.V(transaction_vertex).in_("TRANSFERS_TO").to_list()
                             logger.info(f"Found {len(sender_account_vertices)} sender account vertices")
                             
                             if sender_account_vertices:
@@ -811,8 +814,8 @@ class GraphService:
                         try:
                             logger.info(f"Looking for receiver account for transaction {transaction_props.get('transaction_id', 'unknown')}")
                             
-                            # Try to find the receiver account using the RECEIVED edge
-                            receiver_account_vertices = self.client.V(transaction_vertex).out("RECEIVED").to_list()
+                            # Try to find the receiver account using the TRANSFERS_FROM edge
+                            receiver_account_vertices = self.client.V(transaction_vertex).out("TRANSFERS_FROM").to_list()
                             logger.info(f"Found {len(receiver_account_vertices)} receiver account vertices")
                             
                             if receiver_account_vertices:
@@ -1161,4 +1164,269 @@ class GraphService:
                 
         except Exception as e:
             logger.error(f"Error loading users only: {e}")
-            return {"error": str(e)} 
+            return {"error": str(e)}
+
+    async def flag_account(self, account_id: str, reason: str) -> bool:
+        """Flag an account as fraudulent"""
+        try:
+            if not self.client:
+                raise Exception("Graph client not available")
+            
+            loop = asyncio.get_event_loop()
+            
+            def flag_account_sync():
+                try:
+                    # Find and update account
+                    accounts = self.client.V().has_label("account").has("account_id", account_id).to_list()
+                    if not accounts:
+                        return False
+                    
+                    account_vertex = accounts[0]
+                    self.client.V(account_vertex).property("fraudFlag", True).property("flagReason", reason).property("flagTimestamp", datetime.now().isoformat()).iterate()
+                    
+                    logger.info(f"🚩 Account {account_id} flagged as fraudulent: {reason}")
+                    return True
+                    
+                except Exception as e:
+                    logger.error(f"Error flagging account {account_id}: {e}")
+                    return False
+            
+            return await loop.run_in_executor(None, flag_account_sync)
+            
+        except Exception as e:
+            logger.error(f"Error in flag_account: {e}")
+            return False
+
+    async def unflag_account(self, account_id: str) -> bool:
+        """Remove fraud flag from an account"""
+        try:
+            if not self.client:
+                raise Exception("Graph client not available")
+            
+            loop = asyncio.get_event_loop()
+            
+            def unflag_account_sync():
+                try:
+                    # Find and update account
+                    accounts = self.client.V().has_label("account").has("account_id", account_id).to_list()
+                    if not accounts:
+                        return False
+                    
+                    account_vertex = accounts[0]
+                    self.client.V(account_vertex).property("fraudFlag", False).property("unflagTimestamp", datetime.now().isoformat()).iterate()
+                    
+                    logger.info(f"✅ Account {account_id} unflagged")
+                    return True
+                    
+                except Exception as e:
+                    logger.error(f"Error unflagging account {account_id}: {e}")
+                    return False
+            
+            return await loop.run_in_executor(None, unflag_account_sync)
+            
+        except Exception as e:
+            logger.error(f"Error in unflag_account: {e}")
+            return False
+
+    async def get_flagged_accounts(self) -> List[Dict[str, Any]]:
+        """Get list of all flagged accounts"""
+        try:
+            if not self.client:
+                raise Exception("Graph client not available")
+            
+            loop = asyncio.get_event_loop()
+            
+            def get_flagged_sync():
+                try:
+                    flagged_accounts = []
+                    accounts = self.client.V().has_label("account").has("fraudFlag", True).to_list()
+                    
+                    for account_vertex in accounts:
+                        account_props = {}
+                        props = self.client.V(account_vertex).value_map().next()
+                        for key, value in props.items():
+                            if isinstance(value, list) and len(value) > 0:
+                                account_props[key] = value[0]
+                            else:
+                                account_props[key] = value
+                        
+                        flagged_accounts.append({
+                            "account_id": account_props.get("account_id", ""),
+                            "type": account_props.get("type", ""),
+                            "balance": account_props.get("balance", 0.0),
+                            "flag_reason": account_props.get("flagReason", ""),
+                            "flag_timestamp": account_props.get("flagTimestamp", ""),
+                            "status": account_props.get("status", "active")
+                        })
+                    
+                    return flagged_accounts
+                    
+                except Exception as e:
+                    logger.error(f"Error getting flagged accounts: {e}")
+                    return []
+            
+            return await loop.run_in_executor(None, get_flagged_sync)
+            
+        except Exception as e:
+            logger.error(f"Error in get_flagged_accounts: {e}")
+            return []
+
+    async def create_transfer_relationship(self, from_account_id: str, to_account_id: str, amount: float) -> bool:
+        """Create a TRANSFERS_TO edge between accounts"""
+        try:
+            if not self.client:
+                raise Exception("Graph client not available")
+            
+            loop = asyncio.get_event_loop()
+            
+            def create_relationship_sync():
+                try:
+                    # Find both accounts
+                    from_accounts = self.client.V().has_label("account").has("account_id", from_account_id).to_list()
+                    to_accounts = self.client.V().has_label("account").has("account_id", to_account_id).to_list()
+                    
+                    if not from_accounts or not to_accounts:
+                        return False
+                    
+                    from_vertex = from_accounts[0]
+                    to_vertex = to_accounts[0]
+                    
+                    # Create TRANSFERS_TO edge
+                    self.client.add_e("TRANSFERS_TO").from_(from_vertex).to(to_vertex).property("amount", amount).property("timestamp", datetime.now().isoformat()).property("status", "completed").property("method", "test_transfer").iterate()
+                    
+                    logger.info(f"💸 Created TRANSFERS_TO edge: {from_account_id} → {to_account_id} (${amount})")
+                    return True
+                    
+                except Exception as e:
+                    logger.error(f"Error creating transfer relationship: {e}")
+                    return False
+            
+            return await loop.run_in_executor(None, create_relationship_sync)
+            
+        except Exception as e:
+            logger.error(f"Error in create_transfer_relationship: {e}")
+            return False
+
+    async def get_fraud_check_results_paginated(self, page: int, page_size: int) -> Dict[str, Any]:
+        """Get paginated list of fraud check results"""
+        try:
+            if not self.client:
+                raise Exception("Graph client not available")
+            
+            loop = asyncio.get_event_loop()
+            
+            def get_results_sync():
+                try:
+                    all_results = self.client.V().has_label("FraudCheckResult").to_list()
+                    
+                    # Paginate
+                    start_idx = (page - 1) * page_size
+                    end_idx = start_idx + page_size
+                    paginated_results = all_results[start_idx:end_idx]
+                    
+                    results_data = []
+                    for result_vertex in paginated_results:
+                        result_props = {}
+                        props = self.client.V(result_vertex).value_map().next()
+                        for key, value in props.items():
+                            if isinstance(value, list) and len(value) > 0:
+                                result_props[key] = value[0]
+                            else:
+                                result_props[key] = value
+                        
+                        # Get associated transaction
+                        transaction_vertices = self.client.V(result_vertex).in_("flagged_by").to_list()
+                        transaction_id = ""
+                        if transaction_vertices:
+                            transaction_props = self.client.V(transaction_vertices[0]).value_map().next()
+                            transaction_id = transaction_props.get("transaction_id", [""])[0]
+                        
+                        results_data.append({
+                            "transaction_id": transaction_id,
+                            "fraud_score": result_props.get("fraud_score", 0.0),
+                            "status": result_props.get("status", ""),
+                            "rule": result_props.get("rule", ""),
+                            "evaluation_timestamp": result_props.get("evaluation_timestamp", ""),
+                            "reason": result_props.get("reason", ""),
+                            "details": result_props.get("details", "")
+                        })
+                    
+                    return {
+                        "fraud_results": results_data,
+                        "total": len(all_results),
+                        "page": page,
+                        "page_size": page_size,
+                        "total_pages": (len(all_results) + page_size - 1) // page_size
+                    }
+                    
+                except Exception as e:
+                    logger.error(f"Error getting fraud results: {e}")
+                    return {
+                        "fraud_results": [],
+                        "total": 0,
+                        "page": page,
+                        "page_size": page_size,
+                        "total_pages": 0
+                    }
+            
+            return await loop.run_in_executor(None, get_results_sync)
+            
+        except Exception as e:
+            logger.error(f"Error in get_fraud_check_results_paginated: {e}")
+            return {
+                "fraud_results": [],
+                "total": 0,
+                "page": page,
+                "page_size": page_size,
+                "total_pages": 0
+            }
+
+    async def get_transaction_fraud_results(self, transaction_id: str) -> List[Dict[str, Any]]:
+        """Get fraud check results for a specific transaction"""
+        try:
+            if not self.client:
+                raise Exception("Graph client not available")
+            
+            loop = asyncio.get_event_loop()
+            
+            def get_transaction_results_sync():
+                try:
+                    results_data = []
+                    
+                    # Find transaction and its fraud results
+                    transaction_vertices = self.client.V().has_label("transaction").has("transaction_id", transaction_id).to_list()
+                    if not transaction_vertices:
+                        return []
+                    
+                    transaction_vertex = transaction_vertices[0]
+                    result_vertices = self.client.V(transaction_vertex).out("flagged_by").to_list()
+                    
+                    for result_vertex in result_vertices:
+                        result_props = {}
+                        props = self.client.V(result_vertex).value_map().next()
+                        for key, value in props.items():
+                            if isinstance(value, list) and len(value) > 0:
+                                result_props[key] = value[0]
+                            else:
+                                result_props[key] = value
+                        
+                        results_data.append({
+                            "fraud_score": result_props.get("fraud_score", 0.0),
+                            "status": result_props.get("status", ""),
+                            "rule": result_props.get("rule", ""),
+                            "evaluation_timestamp": result_props.get("evaluation_timestamp", ""),
+                            "reason": result_props.get("reason", ""),
+                            "details": result_props.get("details", "")
+                        })
+                    
+                    return results_data
+                    
+                except Exception as e:
+                    logger.error(f"Error getting transaction fraud results: {e}")
+                    return []
+            
+            return await loop.run_in_executor(None, get_transaction_results_sync)
+            
+        except Exception as e:
+            logger.error(f"Error in get_transaction_fraud_results: {e}")
+            return [] 
