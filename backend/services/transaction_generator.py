@@ -283,7 +283,7 @@ class TransactionGeneratorService:
                 "user_id": sender_user.get("id", "unknown"),
                 "account_id": sender_account_id or "unknown",
                 "amount": round(amount, 2),
-                "currency": "USD",
+                "currency": "INR",
                 "transaction_type": transaction_type,
                 "merchant": random.choice(merchants),
                 "location": random.choice(locations),

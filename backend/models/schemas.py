@@ -45,7 +45,7 @@ class Transaction(BaseModel):
     sender_id: str
     receiver_id: str
     amount: float
-    currency: str = "USD"
+    currency: str = "INR"
     timestamp: datetime
     location: str
     device_id: Optional[str] = None

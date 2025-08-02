@@ -141,7 +141,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${stats?.total_amount?.toLocaleString() || '0'}
+              ₹{stats?.total_amount?.toLocaleString('en-IN') || '0'}
             </div>
             <p className="text-xs text-muted-foreground">
               Total transaction volume

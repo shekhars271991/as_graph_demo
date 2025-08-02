@@ -132,9 +132,9 @@ export default function TransactionsPage() {
   }
 
   const formatAmount = (amount: number, currency: string) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: currency || 'USD'
+      currency: currency || 'INR'
     }).format(amount)
   }
 

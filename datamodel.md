@@ -41,7 +41,7 @@ This document defines the vertices and edges used in a graph database for modeli
 - **Properties:**
   - `transaction_id` (string) - Unique identifier for the transaction
   - `amount` (float) - Transaction amount
-  - `currency` (string) - Currency code (e.g., "USD")
+  - `currency` (string) - Currency code (e.g., "INR")
   - `timestamp` (datetime) - When the transaction occurred
   - `location` (string) - Geographic location of the transaction
   - `fraud_score` (float) - Fraud risk score for this transaction

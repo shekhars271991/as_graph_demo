@@ -95,7 +95,7 @@ const fraudScenarios: FraudScenario[] = [
     enabled: true,
     priority: 'Phase 1',
     keyIndicators: [
-      'Large credit ($10,000-$50,000)',
+              'Large credit (₹8,00,000-₹40,00,000)',
       'Exactly 4 equal debits within 4 hours',
       'Each debit ≈ 1/4 of credit amount',
       'All debits to same destination'
@@ -112,7 +112,7 @@ const fraudScenarios: FraudScenario[] = [
     priority: 'Phase 2',
     keyIndicators: [
       '3+ ATM withdrawal transactions',
-      'Each withdrawal $5,000-$10,000',
+              'Each withdrawal ₹4,00,000-₹8,00,000',
       'Self-directed transactions'
     ],
     commonUseCase: 'Cash extraction for money laundering',
@@ -127,7 +127,7 @@ const fraudScenarios: FraudScenario[] = [
     priority: 'Phase 1',
     keyIndicators: [
       '10+ transactions in short time',
-      'Amounts $500-$5,000 each',
+      'Amounts ₹40,000-₹4,00,000 each',
       'Mix of credits/debits within 1 hour',
       'High velocity money movement'
     ],
@@ -142,9 +142,9 @@ const fraudScenarios: FraudScenario[] = [
     enabled: false,
     priority: 'Phase 2',
     keyIndicators: [
-      'Initial credit $5,000-$10,000',
+              'Initial credit ₹4,00,000-₹8,00,000',
       '3+ outgoing transfers',
-      'Transfer amounts $5,000-$7,000'
+              'Transfer amounts ₹4,00,000-₹5,60,000'
     ],
     commonUseCase: 'Account takeover, identity theft',
     detailedDescription: 'A pattern mimicking legitimate salary deposits but followed by suspicious outgoing transfers. This suggests account takeover or identity theft where fraudsters mimic normal salary patterns.'
@@ -158,7 +158,7 @@ const fraudScenarios: FraudScenario[] = [
     priority: 'Phase 2',
     keyIndicators: [
       '30+ days dormancy',
-      'Sudden large credit $10,000-$50,000',
+              'Sudden large credit ₹8,00,000-₹40,00,000',
       '4 equal debits following',
       'Total debits ≈ credit amount'
     ],
@@ -174,7 +174,7 @@ const fraudScenarios: FraudScenario[] = [
     priority: 'Phase 3',
     keyIndicators: [
       '5+ international transfers',
-      'Amounts $500-$5,000 each',
+      'Amounts ₹40,000-₹4,00,000 each',
       'High-risk jurisdictions',
       'Dubai, Bahrain, Thailand'
     ],
@@ -189,7 +189,7 @@ const fraudScenarios: FraudScenario[] = [
     enabled: false,
     priority: 'Phase 3',
     keyIndicators: [
-      '3+ large transfers $10,000-$50,000',
+              '3+ large transfers ₹8,00,000-₹40,00,000',
       'High-risk locations',
       'Jamtara, Bharatpur, Alwar',
       'Region-specific patterns'
@@ -943,7 +943,7 @@ export default function AdminPage() {
                       <div className="flex items-center space-x-1">
                         <DollarSign className="w-3 h-3" />
                         <span className="font-medium">
-                          ${transaction.amount.toFixed(2)}
+                          ₹{transaction.amount.toFixed(2)}
                         </span>
                       </div>
                       <div className="text-xs text-muted-foreground">
