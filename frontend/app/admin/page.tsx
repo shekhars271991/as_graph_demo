@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Switch } from '@/components/ui/switch'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { 
   Play, 
   Square, 
@@ -503,479 +504,499 @@ export default function AdminPage() {
         </Card>
       )}
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {/* Generation Controls */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Settings className="w-5 h-5" />
-              <span>Generation Controls</span>
-            </CardTitle>
-            <CardDescription>
-              Start, stop, and configure transaction generation
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Generation Rate (transactions/sec)</label>
-              <Input
-                type="number"
-                min="1"
-                max="100"
-                value={generationRate}
-                onChange={(e) => setGenerationRate(parseInt(e.target.value) || 1)}
-                disabled={isGenerating}
-              />
-            </div>
-            
-            <div className="flex space-x-2">
-              <Button
-                onClick={handleStartGeneration}
-                disabled={isGenerating || isLoading}
-                className="flex-1"
-              >
-                {isLoading ? (
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Play className="w-4 h-4 mr-2" />
-                )}
-                Start
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleStopGeneration}
-                disabled={!isGenerating || isLoading}
-                className="flex-1"
-              >
-                {isLoading ? (
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Square className="w-4 h-4 mr-2" />
-                )}
-                Stop
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Main Content with Tabs */}
+      <Tabs defaultValue="generation" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="generation" className="flex items-center space-x-2">
+            <Activity className="w-4 h-4" />
+            <span>Transaction Generation</span>
+          </TabsTrigger>
+          <TabsTrigger value="fraud-detection" className="flex items-center space-x-2">
+            <Shield className="w-4 h-4" />
+            <span>Fraud Detection</span>
+          </TabsTrigger>
+        </TabsList>
 
-        {/* Statistics */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Activity className="w-5 h-5" />
-              <span>Statistics</span>
-            </CardTitle>
-            <CardDescription>
-              Real-time generation metrics
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary">
-                  {stats.totalGenerated.toLocaleString()}
+        {/* Transaction Generation Tab */}
+        <TabsContent value="generation" className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {/* Generation Controls */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Settings className="w-5 h-5" />
+                  <span>Generation Controls</span>
+                </CardTitle>
+                <CardDescription>
+                  Start, stop, and configure transaction generation
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Generation Rate (transactions/sec)</label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={generationRate}
+                    onChange={(e) => setGenerationRate(parseInt(e.target.value) || 1)}
+                    disabled={isGenerating}
+                  />
                 </div>
-                <div className="text-xs text-muted-foreground">Total Generated</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">
-                  {stats.currentRate}/s
-                </div>
-                <div className="text-xs text-muted-foreground">Current Rate</div>
-              </div>
-            </div>
-            
-            {stats.isRunning && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Generation Progress</span>
-                  <span className="text-xs font-mono">
-                    {Math.round((stats.totalGenerated % 1000) / 10)}%
-                  </span>
-                </div>
-                <Progress value={stats.totalGenerated % 1000} max={1000} />
-              </div>
-            )}
-            
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Duration</span>
-                <span className="font-mono">{stats.duration}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Status</span>
-                <Badge variant={stats.isRunning ? "default" : "secondary"}>
-                  {stats.isRunning ? "Running" : "Stopped"}
-                </Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Database className="w-5 h-5" />
-              <span>Quick Actions</span>
-            </CardTitle>
-            <CardDescription>
-              Manage data and system operations
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button
-              variant={showClearConfirmation ? "destructive" : "outline"}
-              onClick={handleClearTransactions}
-              disabled={isLoading || recentTransactions.length === 0}
-              className="w-full"
-            >
-              {isLoading ? (
-                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Trash2 className="w-4 h-4 mr-2" />
-              )}
-              {showClearConfirmation ? "Confirm Clear" : "Clear All Transactions"}
-            </Button>
-            
-            {showClearConfirmation && (
-              <Button
-                variant="outline"
-                onClick={() => setShowClearConfirmation(false)}
-                className="w-full"
-              >
-                Cancel
-              </Button>
-            )}
-            
-            <div className="text-xs text-muted-foreground">
-              {showClearConfirmation 
-                ? "This action cannot be undone. Click 'Confirm Clear' to proceed."
-                : "This will remove all generated transactions from the system."
-              }
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Fraud Detection Scenarios */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center space-x-2">
-              <Shield className="w-5 h-5" />
-              <span>Fraud Detection Scenarios</span>
-            </span>
-            <div className="flex items-center space-x-2">
-              <Badge variant="secondary">
-                {enabledScenarios.length} of {scenarios.length} enabled
-              </Badge>
-            </div>
-          </CardTitle>
-          <CardDescription>
-            Configure which fraud detection patterns to monitor in real-time
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Phase 1 Scenarios */}
-          <div className="space-y-3">
-            <h3 className="text-lg font-semibold flex items-center space-x-2">
-              <Target className="w-4 h-4 text-blue-600" />
-              <span>Phase 1 - High Priority</span>
-            </h3>
-            {phase1Scenarios.map((scenario) => (
-              <Collapsible key={scenario.id}>
-                <div className="border rounded-lg">
-                  <CollapsibleTrigger
-                    onClick={() => toggleScenarioExpansion(scenario.id)}
-                    isOpen={expandedScenarios.has(scenario.id)}
+                
+                <div className="flex space-x-2">
+                  <Button
+                    onClick={handleStartGeneration}
+                    disabled={isGenerating || isLoading}
+                    className="flex-1"
                   >
-                    <div className="flex items-center justify-between w-full">
-                      <div className="flex items-center space-x-3">
-                        <div onClick={(e) => e.stopPropagation()}>
-                        <Switch
-                          checked={scenario.enabled}
-                          onCheckedChange={() => toggleScenario(scenario.id)}
-                        />
-                        </div>
-                        <div className="text-left">
-                          <div className="font-medium">{scenario.name}</div>
-                          <div className="text-sm text-muted-foreground">{scenario.description}</div>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Badge className={getRiskLevelColor(scenario.riskLevel)}>
-                          {scenario.riskLevel}
-                        </Badge>
-                        <div
-                          className="inline-flex items-center justify-center h-9 rounded-md px-3 text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground cursor-pointer"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            showScenarioDetails(scenario)
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === ' ' || e.key === 'Enter') {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              showScenarioDetails(scenario)
-                            }
-                          }}
-                          tabIndex={0}
-                          role="button"
-                          aria-label="View scenario details"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </div>
-                      </div>
-                    </div>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent isOpen={expandedScenarios.has(scenario.id)}>
-                    <div className="space-y-3 text-sm">
-                      <div>
-                        <strong>Key Indicators:</strong>
-                        <ul className="list-disc list-inside mt-1 space-y-1">
-                          {scenario.keyIndicators.map((indicator, index) => (
-                            <li key={index} className="text-muted-foreground">{indicator}</li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div>
-                        <strong>Common Use Case:</strong>
-                        <p className="text-muted-foreground mt-1">{scenario.commonUseCase}</p>
-                      </div>
-                    </div>
-                  </CollapsibleContent>
-                </div>
-              </Collapsible>
-            ))}
-          </div>
-
-          {/* Phase 2 Scenarios */}
-          <div className="space-y-3">
-            <h3 className="text-lg font-semibold flex items-center space-x-2">
-              <TrendingUp className="w-4 h-4 text-purple-600" />
-              <span>Phase 2 - Medium Priority</span>
-            </h3>
-            {phase2Scenarios.map((scenario) => (
-              <Collapsible key={scenario.id}>
-                <div className="border rounded-lg">
-                  <CollapsibleTrigger
-                    onClick={() => toggleScenarioExpansion(scenario.id)}
-                    isOpen={expandedScenarios.has(scenario.id)}
+                    {isLoading ? (
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Play className="w-4 h-4 mr-2" />
+                    )}
+                    Start
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={handleStopGeneration}
+                    disabled={!isGenerating || isLoading}
+                    className="flex-1"
                   >
-                    <div className="flex items-center justify-between w-full">
-                      <div className="flex items-center space-x-3">
-                        <div onClick={(e) => e.stopPropagation()}>
-                        <Switch
-                          checked={scenario.enabled}
-                          onCheckedChange={() => toggleScenario(scenario.id)}
-                        />
-                        </div>
-                        <div className="text-left">
-                          <div className="font-medium">{scenario.name}</div>
-                          <div className="text-sm text-muted-foreground">{scenario.description}</div>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Badge className={getRiskLevelColor(scenario.riskLevel)}>
-                          {scenario.riskLevel}
-                        </Badge>
-                        <div
-                          className="inline-flex items-center justify-center h-9 rounded-md px-3 text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground cursor-pointer"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            showScenarioDetails(scenario)
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === ' ' || e.key === 'Enter') {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              showScenarioDetails(scenario)
-                            }
-                          }}
-                          tabIndex={0}
-                          role="button"
-                          aria-label="View scenario details"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </div>
-                      </div>
-                    </div>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent isOpen={expandedScenarios.has(scenario.id)}>
-                    <div className="space-y-3 text-sm">
-                      <div>
-                        <strong>Key Indicators:</strong>
-                        <ul className="list-disc list-inside mt-1 space-y-1">
-                          {scenario.keyIndicators.map((indicator, index) => (
-                            <li key={index} className="text-muted-foreground">{indicator}</li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div>
-                        <strong>Common Use Case:</strong>
-                        <p className="text-muted-foreground mt-1">{scenario.commonUseCase}</p>
-                      </div>
-                    </div>
-                  </CollapsibleContent>
+                    {isLoading ? (
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Square className="w-4 h-4 mr-2" />
+                    )}
+                    Stop
+                  </Button>
                 </div>
-              </Collapsible>
-            ))}
-          </div>
+              </CardContent>
+            </Card>
 
-          {/* Phase 3 Scenarios */}
-          <div className="space-y-3">
-            <h3 className="text-lg font-semibold flex items-center space-x-2">
-              <Globe className="w-4 h-4 text-gray-600" />
-              <span>Phase 3 - Lower Priority</span>
-            </h3>
-            {phase3Scenarios.map((scenario) => (
-              <Collapsible key={scenario.id}>
-                <div className="border rounded-lg">
-                  <CollapsibleTrigger
-                    onClick={() => toggleScenarioExpansion(scenario.id)}
-                    isOpen={expandedScenarios.has(scenario.id)}
-                  >
-                    <div className="flex items-center justify-between w-full">
-                      <div className="flex items-center space-x-3">
-                        <div onClick={(e) => e.stopPropagation()}>
-                        <Switch
-                          checked={scenario.enabled}
-                          onCheckedChange={() => toggleScenario(scenario.id)}
-                        />
-                        </div>
-                        <div className="text-left">
-                          <div className="font-medium">{scenario.name}</div>
-                          <div className="text-sm text-muted-foreground">{scenario.description}</div>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Badge className={getRiskLevelColor(scenario.riskLevel)}>
-                          {scenario.riskLevel}
-                        </Badge>
-                        <div
-                          className="inline-flex items-center justify-center h-9 rounded-md px-3 text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground cursor-pointer"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            showScenarioDetails(scenario)
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === ' ' || e.key === 'Enter') {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              showScenarioDetails(scenario)
-                            }
-                          }}
-                          tabIndex={0}
-                          role="button"
-                          aria-label="View scenario details"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </div>
-                      </div>
+            {/* Statistics */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Activity className="w-5 h-5" />
+                  <span>Statistics</span>
+                </CardTitle>
+                <CardDescription>
+                  Real-time generation metrics
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-primary">
+                      {stats.totalGenerated.toLocaleString()}
                     </div>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent isOpen={expandedScenarios.has(scenario.id)}>
-                    <div className="space-y-3 text-sm">
-                      <div>
-                        <strong>Key Indicators:</strong>
-                        <ul className="list-disc list-inside mt-1 space-y-1">
-                          {scenario.keyIndicators.map((indicator, index) => (
-                            <li key={index} className="text-muted-foreground">{indicator}</li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div>
-                        <strong>Common Use Case:</strong>
-                        <p className="text-muted-foreground mt-1">{scenario.commonUseCase}</p>
-                      </div>
+                    <div className="text-xs text-muted-foreground">Total Generated</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600">
+                      {stats.currentRate}/s
                     </div>
-                  </CollapsibleContent>
+                    <div className="text-xs text-muted-foreground">Current Rate</div>
+                  </div>
                 </div>
-              </Collapsible>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Recent Transactions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center space-x-2">
-              <Clock className="w-5 h-5" />
-              <span>Recent Transactions</span>
-            </span>
-            <Badge variant="secondary">
-              {recentTransactions.length} transactions
-            </Badge>
-          </CardTitle>
-          <CardDescription>
-            Live feed of generated transactions
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {recentTransactions.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Database className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>No transactions generated yet</p>
-              <p className="text-sm">Start generation to see transactions here</p>
-            </div>
-          ) : (
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {recentTransactions.map((transaction) => (
-                <div
-                  key={transaction.id}
-                  className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="flex flex-col">
-                      <span className="font-mono text-sm">{transaction.id}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(transaction.timestamp).toLocaleTimeString()}
+                
+                {stats.isRunning && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Generation Progress</span>
+                      <span className="text-xs font-mono">
+                        {Math.round((stats.totalGenerated % 1000) / 10)}%
                       </span>
                     </div>
+                    <Progress value={stats.totalGenerated % 1000} max={1000} />
                   </div>
-                  
-                  <div className="flex items-center space-x-4">
-                    <div className="text-right">
-                      <div className="flex items-center space-x-1">
-                        
-                        <span className="font-medium">
-                          ₹{transaction.amount.toFixed(2)}
-                        </span>
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {transaction.location}
-                      </div>
-                    </div>
-                    
-                    <Badge className={getFraudScoreColor(transaction.fraud_score || 0)}>
-                      {(transaction.fraud_score || 0).toFixed(1)}
-                    </Badge>
-                    
-                    {transaction.is_fraud && (
-                      <Badge variant="destructive">
-                        <AlertTriangle className="w-3 h-3 mr-1" />
-                        FRAUD
-                      </Badge>
-                    )}
-                    
-                    <Badge variant={transaction.status === 'completed' ? 'default' : 'secondary'}>
-                      {transaction.status === 'completed' ? (
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                      ) : (
-                        <XCircle className="w-3 h-3 mr-1" />
-                      )}
-                      {transaction.status}
+                )}
+                
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Duration</span>
+                    <span className="font-mono">{stats.duration}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Status</span>
+                    <Badge variant={stats.isRunning ? "default" : "secondary"}>
+                      {stats.isRunning ? "Running" : "Stopped"}
                     </Badge>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              </CardContent>
+            </Card>
+
+            {/* Quick Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Database className="w-5 h-5" />
+                  <span>Quick Actions</span>
+                </CardTitle>
+                <CardDescription>
+                  Manage data and system operations
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button
+                  variant={showClearConfirmation ? "destructive" : "outline"}
+                  onClick={handleClearTransactions}
+                  disabled={isLoading || recentTransactions.length === 0}
+                  className="w-full"
+                >
+                  {isLoading ? (
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-4 h-4 mr-2" />
+                  )}
+                  {showClearConfirmation ? "Confirm Clear" : "Clear All Transactions"}
+                </Button>
+                
+                {showClearConfirmation && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowClearConfirmation(false)}
+                    className="w-full"
+                  >
+                    Cancel
+                  </Button>
+                )}
+                
+                <div className="text-xs text-muted-foreground">
+                  {showClearConfirmation 
+                    ? "This action cannot be undone. Click 'Confirm Clear' to proceed."
+                    : "This will remove all generated transactions from the system."
+                  }
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Recent Transactions */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span className="flex items-center space-x-2">
+                  <Clock className="w-5 h-5" />
+                  <span>Recent Transactions</span>
+                </span>
+                <Badge variant="secondary">
+                  {recentTransactions.length} transactions
+                </Badge>
+              </CardTitle>
+              <CardDescription>
+                Live feed of generated transactions
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {recentTransactions.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Database className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No transactions generated yet</p>
+                  <p className="text-sm">Start generation to see transactions here</p>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {recentTransactions.map((transaction) => (
+                    <div
+                      key={transaction.id}
+                      className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="flex flex-col">
+                          <span className="font-mono text-sm">{transaction.id}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(transaction.timestamp).toLocaleTimeString()}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-4">
+                        <div className="text-right">
+                          <div className="flex items-center space-x-1">
+                            
+                            <span className="font-medium">
+                              ₹{transaction.amount.toFixed(2)}
+                            </span>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {transaction.location}
+                          </div>
+                        </div>
+                        
+                        <Badge className={getFraudScoreColor(transaction.fraud_score || 0)}>
+                          {(transaction.fraud_score || 0).toFixed(1)}
+                        </Badge>
+                        
+                        {transaction.is_fraud && (
+                          <Badge variant="destructive">
+                            <AlertTriangle className="w-3 h-3 mr-1" />
+                            FRAUD
+                          </Badge>
+                        )}
+                        
+                        <Badge variant={transaction.status === 'completed' ? 'default' : 'secondary'}>
+                          {transaction.status === 'completed' ? (
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                          ) : (
+                            <XCircle className="w-3 h-3 mr-1" />
+                          )}
+                          {transaction.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Fraud Detection Tab */}
+        <TabsContent value="fraud-detection" className="space-y-6">
+          {/* Fraud Detection Scenarios */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span className="flex items-center space-x-2">
+                  <Shield className="w-5 h-5" />
+                  <span>Fraud Detection Scenarios</span>
+                </span>
+                <div className="flex items-center space-x-2">
+                  <Badge variant="secondary">
+                    {enabledScenarios.length} of {scenarios.length} enabled
+                  </Badge>
+                </div>
+              </CardTitle>
+              <CardDescription>
+                Configure which fraud detection patterns to monitor in real-time
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Phase 1 Scenarios */}
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold flex items-center space-x-2">
+                  <Target className="w-4 h-4 text-blue-600" />
+                  <span>Phase 1 - High Priority</span>
+                </h3>
+                {phase1Scenarios.map((scenario) => (
+                  <Collapsible key={scenario.id}>
+                    <div className="border rounded-lg">
+                      <CollapsibleTrigger
+                        onClick={() => toggleScenarioExpansion(scenario.id)}
+                        isOpen={expandedScenarios.has(scenario.id)}
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center space-x-3">
+                            <div onClick={(e) => e.stopPropagation()}>
+                            <Switch
+                              checked={scenario.enabled}
+                              onCheckedChange={() => toggleScenario(scenario.id)}
+                            />
+                            </div>
+                            <div className="text-left">
+                              <div className="font-medium">{scenario.name}</div>
+                              <div className="text-sm text-muted-foreground">{scenario.description}</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Badge className={getRiskLevelColor(scenario.riskLevel)}>
+                              {scenario.riskLevel}
+                            </Badge>
+                            <div
+                              className="inline-flex items-center justify-center h-9 rounded-md px-3 text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                showScenarioDetails(scenario)
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === ' ' || e.key === 'Enter') {
+                                  e.preventDefault()
+                                  e.stopPropagation()
+                                  showScenarioDetails(scenario)
+                                }
+                              }}
+                              tabIndex={0}
+                              role="button"
+                              aria-label="View scenario details"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </div>
+                          </div>
+                        </div>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent isOpen={expandedScenarios.has(scenario.id)}>
+                        <div className="space-y-3 text-sm">
+                          <div>
+                            <strong>Key Indicators:</strong>
+                            <ul className="list-disc list-inside mt-1 space-y-1">
+                              {scenario.keyIndicators.map((indicator, index) => (
+                                <li key={index} className="text-muted-foreground">{indicator}</li>
+                              ))}
+                            </ul>
+                          </div>
+                          <div>
+                            <strong>Common Use Case:</strong>
+                            <p className="text-muted-foreground mt-1">{scenario.commonUseCase}</p>
+                          </div>
+                        </div>
+                      </CollapsibleContent>
+                    </div>
+                  </Collapsible>
+                ))}
+              </div>
+
+              {/* Phase 2 Scenarios */}
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold flex items-center space-x-2">
+                  <TrendingUp className="w-4 h-4 text-purple-600" />
+                  <span>Phase 2 - Medium Priority</span>
+                </h3>
+                {phase2Scenarios.map((scenario) => (
+                  <Collapsible key={scenario.id}>
+                    <div className="border rounded-lg">
+                      <CollapsibleTrigger
+                        onClick={() => toggleScenarioExpansion(scenario.id)}
+                        isOpen={expandedScenarios.has(scenario.id)}
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center space-x-3">
+                            <div onClick={(e) => e.stopPropagation()}>
+                            <Switch
+                              checked={scenario.enabled}
+                              onCheckedChange={() => toggleScenario(scenario.id)}
+                            />
+                            </div>
+                            <div className="text-left">
+                              <div className="font-medium">{scenario.name}</div>
+                              <div className="text-sm text-muted-foreground">{scenario.description}</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Badge className={getRiskLevelColor(scenario.riskLevel)}>
+                              {scenario.riskLevel}
+                            </Badge>
+                            <div
+                              className="inline-flex items-center justify-center h-9 rounded-md px-3 text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                showScenarioDetails(scenario)
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === ' ' || e.key === 'Enter') {
+                                  e.preventDefault()
+                                  e.stopPropagation()
+                                  showScenarioDetails(scenario)
+                                }
+                              }}
+                              tabIndex={0}
+                              role="button"
+                              aria-label="View scenario details"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </div>
+                          </div>
+                        </div>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent isOpen={expandedScenarios.has(scenario.id)}>
+                        <div className="space-y-3 text-sm">
+                          <div>
+                            <strong>Key Indicators:</strong>
+                            <ul className="list-disc list-inside mt-1 space-y-1">
+                              {scenario.keyIndicators.map((indicator, index) => (
+                                <li key={index} className="text-muted-foreground">{indicator}</li>
+                              ))}
+                            </ul>
+                          </div>
+                          <div>
+                            <strong>Common Use Case:</strong>
+                            <p className="text-muted-foreground mt-1">{scenario.commonUseCase}</p>
+                          </div>
+                        </div>
+                      </CollapsibleContent>
+                    </div>
+                  </Collapsible>
+                ))}
+              </div>
+
+              {/* Phase 3 Scenarios */}
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold flex items-center space-x-2">
+                  <Globe className="w-4 h-4 text-gray-600" />
+                  <span>Phase 3 - Lower Priority</span>
+                </h3>
+                {phase3Scenarios.map((scenario) => (
+                  <Collapsible key={scenario.id}>
+                    <div className="border rounded-lg">
+                      <CollapsibleTrigger
+                        onClick={() => toggleScenarioExpansion(scenario.id)}
+                        isOpen={expandedScenarios.has(scenario.id)}
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center space-x-3">
+                            <div onClick={(e) => e.stopPropagation()}>
+                            <Switch
+                              checked={scenario.enabled}
+                              onCheckedChange={() => toggleScenario(scenario.id)}
+                            />
+                            </div>
+                            <div className="text-left">
+                              <div className="font-medium">{scenario.name}</div>
+                              <div className="text-sm text-muted-foreground">{scenario.description}</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Badge className={getRiskLevelColor(scenario.riskLevel)}>
+                              {scenario.riskLevel}
+                            </Badge>
+                            <div
+                              className="inline-flex items-center justify-center h-9 rounded-md px-3 text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                showScenarioDetails(scenario)
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === ' ' || e.key === 'Enter') {
+                                  e.preventDefault()
+                                  e.stopPropagation()
+                                  showScenarioDetails(scenario)
+                                }
+                              }}
+                              tabIndex={0}
+                              role="button"
+                              aria-label="View scenario details"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </div>
+                          </div>
+                        </div>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent isOpen={expandedScenarios.has(scenario.id)}>
+                        <div className="space-y-3 text-sm">
+                          <div>
+                            <strong>Key Indicators:</strong>
+                            <ul className="list-disc list-inside mt-1 space-y-1">
+                              {scenario.keyIndicators.map((indicator, index) => (
+                                <li key={index} className="text-muted-foreground">{indicator}</li>
+                              ))}
+                            </ul>
+                          </div>
+                          <div>
+                            <strong>Common Use Case:</strong>
+                            <p className="text-muted-foreground mt-1">{scenario.commonUseCase}</p>
+                          </div>
+                        </div>
+                      </CollapsibleContent>
+                    </div>
+                  </Collapsible>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Scenario Details Dialog */}
       <Dialog open={showScenarioDialog} onOpenChange={setShowScenarioDialog}>

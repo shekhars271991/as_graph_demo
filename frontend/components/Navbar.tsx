@@ -11,7 +11,7 @@ const navigation = [
   { name: 'Users', href: '/users' },
   { name: 'Transactions', href: '/transactions' },
   { name: 'Fraud Patterns', href: '/fraud-patterns' },
-  { name: 'Graph View', href: '/graph' },
+  // { name: 'Graph View', href: '/graph' },
   { name: 'Admin', href: '/admin' },
 ]
 
