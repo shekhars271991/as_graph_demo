@@ -11,7 +11,7 @@ import sys
 import argparse
 
 from services.graph_service import GraphService
-from services.fraud_detection import FraudDetectionService
+
 from services.transaction_generator import get_transaction_generator
 from models.schemas import (
     User, Account, Transaction, UserSummary, 
@@ -39,7 +39,6 @@ def parse_arguments():
 
 # Initialize services
 graph_service = GraphService()
-fraud_service = FraudDetectionService(graph_service)
 transaction_generator = get_transaction_generator(graph_service)
 
 @asynccontextmanager
@@ -143,18 +142,6 @@ async def seed_data():
         raise HTTPException(status_code=500, detail=f"Failed to load data: {str(e)}")
 
 
-@app.get("/detect/fraudulent-transactions")
-async def detect_fraudulent_transactions():
-    """Run Gremlin queries to find suspicious transactions"""
-    try:
-        fraud_results = await fraud_service.detect_all_patterns()
-        return {
-            "message": "Fraud detection completed",
-            "patterns_found": len(fraud_results),
-            "results": fraud_results
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to detect fraud: {str(e)}")
 
 @app.get("/user/{user_id}/summary")
 async def get_user_summary(user_id: str):
@@ -283,17 +270,7 @@ async def get_flagged_transactions(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get flagged transactions: {str(e)}")
 
-@app.post("/fraud-patterns/run")
-async def run_fraud_patterns(patterns: List[str]):
-    """Run specific fraud detection patterns"""
-    try:
-        results = await fraud_service.run_specific_patterns(patterns)
-        return {
-            "message": "Fraud patterns executed",
-            "results": results
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to run fraud patterns: {str(e)}")
+
 
 @app.put("/transaction/{transaction_id}/status")
 async def update_transaction_status(

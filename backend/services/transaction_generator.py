@@ -11,6 +11,8 @@ import os
 # Import local modules
 from models.schemas import Transaction
 from services.graph_service import GraphService
+from services.rt1_fraud_service import RT1FraudService
+from services.rt3_fraud_service import RT3FraudService
 
 # Configure logging
 def setup_logging():
@@ -92,6 +94,10 @@ class FraudScenario(Enum):
 class TransactionGeneratorService:
     def __init__(self, graph_service: GraphService):
         self.graph_service = graph_service
+        
+        # Initialize fraud detection services
+        self.rt1_service = RT1FraudService(graph_service)
+        self.rt3_service = RT3FraudService(graph_service)
         self.is_running = False
         self.generation_rate = 1  # transactions per second
         self.generated_transactions = []
@@ -210,7 +216,7 @@ class TransactionGeneratorService:
                 await self._store_transaction_in_graph(transaction)
                 
                 # Run RT1 fraud detection after transaction is stored
-                await self._run_rt1_fraud_detection(transaction)
+                await self._run_fraud_detection(transaction)
                 
                 # Keep only last 1000 transactions
                 if len(self.generated_transactions) > 1000:
@@ -328,87 +334,21 @@ class TransactionGeneratorService:
 
 
 
-    async def _run_rt1_fraud_detection(self, transaction: Dict[str, Any]):
-        """Run RT1 fraud detection: Check if transaction involves flagged accounts"""
+    async def _run_fraud_detection(self, transaction: Dict[str, Any]):
+        """Run all real-time fraud detection checks (RT1 and RT3)"""
         try:
-            if not self.graph_service.client:
-                logger.warning("No graph client available for RT1 fraud detection")
-                return
-                
-            loop = asyncio.get_event_loop()
+            # Run RT1 fraud detection (flagged accounts)
+            rt1_result = await self.rt1_service.check_transaction(transaction)
+            if rt1_result.get("is_fraud"):
+                await self.rt1_service.create_fraud_check_result(transaction, rt1_result)
             
-            # Check if sender or receiver account is connected to flagged accounts
-            def check_flagged_connections():
-                try:
-                    sender_account_id = transaction['account_id']
-                    receiver_account_id = transaction.get('receiver_account_id')
-                    
-                    flagged_connections = []
-                    
-                    # Check sender account connections to flagged accounts (via transactions to receiver accounts)
-                    if sender_account_id and sender_account_id != 'unknown':
-                        sender_flagged = self.graph_service.client.V().has_label("account").has("account_id", sender_account_id).out("TRANSFERS_TO").out("TRANSFERS_FROM").has("fraudFlag", True).to_list()
-                        if sender_flagged:
-                            flagged_connections.append({"account": sender_account_id, "role": "sender", "flagged_connections": len(sender_flagged)})
-                    
-                    # Check receiver account connections to flagged accounts (via transactions to receiver accounts)
-                    if receiver_account_id and receiver_account_id != 'unknown':
-                        receiver_flagged = self.graph_service.client.V().has_label("account").has("account_id", receiver_account_id).out("TRANSFERS_TO").out("TRANSFERS_FROM").has("fraudFlag", True).to_list()
-                        if receiver_flagged:
-                            flagged_connections.append({"account": receiver_account_id, "role": "receiver", "flagged_connections": len(receiver_flagged)})
-                    
-                    return flagged_connections
-                    
-                except Exception as e:
-                    logger.error(f"Error checking flagged connections: {e}")
-                    return []
-            
-            flagged_connections = await loop.run_in_executor(None, check_flagged_connections)
-            
-            # If flagged connections found, create fraud check result
-            if flagged_connections:
-                fraud_score = min(10 + len(flagged_connections) * 5, 100)  # Score 90-100 based on number of connections
-                status = "blocked" if fraud_score >= 85 else "review"
-                reason = f"Connected to {len(flagged_connections)} flagged account(s)"
-                
-                await self._create_fraud_check_result(transaction, fraud_score, status, reason, flagged_connections)
-                logger.warning(f"🚨 RT1 FRAUD DETECTED: Transaction {transaction['id']} - {reason} (Score: {fraud_score})")
-            else:
-                logger.info(f"✅ RT1 CHECK PASSED: Transaction {transaction['id']} - No flagged account connections")
+            # Run RT3 fraud detection (supernode detection)
+            rt3_result = await self.rt3_service.check_transaction(transaction)
+            if rt3_result.get("is_fraud"):
+                await self.rt3_service.create_fraud_check_result(transaction, rt3_result)
                 
         except Exception as e:
-            logger.error(f"❌ Error in RT1 fraud detection for transaction {transaction.get('id', 'unknown')}: {e}")
-
-    async def _create_fraud_check_result(self, transaction: Dict[str, Any], fraud_score: float, status: str, reason: str, details: List[Dict]):
-        """Create FraudCheckResult vertex and flagged_by edge"""
-        try:
-            if not self.graph_service.client:
-                return
-                
-            loop = asyncio.get_event_loop()
-            
-            def create_fraud_result():
-                try:
-                    # Find the transaction vertex
-                    transaction_vertex = self.graph_service.client.V().has_label("transaction").has("transaction_id", transaction['id']).next()
-                    
-                    # Create FraudCheckResult vertex
-                    fraud_result_vertex = self.graph_service.client.add_v("FraudCheckResult").property("fraud_score", fraud_score).property("status", status).property("rule", "flaggedAccountsRule").property("evaluation_timestamp", datetime.now().isoformat()).property("reason", reason).property("details", str(details)).next()
-                    
-                    # Create flagged_by edge from transaction to fraud result
-                    self.graph_service.client.add_e("flagged_by").from_(transaction_vertex).to(fraud_result_vertex).iterate()
-                    
-                    logger.info(f"📊 Created FraudCheckResult for transaction {transaction['id']}: {status} (Score: {fraud_score})")
-                    return True
-                    
-                except Exception as e:
-                    logger.error(f"Error creating fraud check result: {e}")
-                    return False
-            
-            await loop.run_in_executor(None, create_fraud_result)
-            
-        except Exception as e:
-            logger.error(f"❌ Error creating fraud check result for transaction {transaction.get('id', 'unknown')}: {e}")
+            logger.error(f"❌ Error in fraud detection for transaction {transaction.get('id', 'unknown')}: {e}")
 
     async def _store_transaction_in_graph(self, transaction: Dict[str, Any]):
         """Store transaction in the graph database"""
