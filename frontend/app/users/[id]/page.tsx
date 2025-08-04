@@ -576,28 +576,23 @@ export default function UserDetailPage() {
               {userDetails.devices && userDetails.devices.length > 0 ? (
                 <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
                   {userDetails.devices.map((device) => (
-                    <Card key={device.id} className="p-4 hover:shadow-md transition-shadow">
-                      <div className="space-y-3">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
-                            {getDeviceIcon(device.type)}
-                            <div>
-                              <p className="font-semibold capitalize">{device.type}</p>
-                              <p className="text-sm text-muted-foreground">{device.os}</p>
-                              <p className="text-xs text-muted-foreground">{device.browser}</p>
-                            </div>
-                          </div>
-                          <Badge variant="secondary" className="text-xs">
-                            {device.id}
-                          </Badge>
-                        </div>
-                        
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">Device ID</span>
-                          <code className="text-xs bg-muted px-2 py-1 rounded">{device.id}</code>
-                        </div>
-                      </div>
-                    </Card>
+                                         <Card key={device.id} className="p-4 hover:shadow-md transition-shadow">
+                       <div className="space-y-3">
+                         <div className="flex items-start justify-between">
+                           <div className="flex items-center gap-3">
+                             {getDeviceIcon(device.type)}
+                             <div>
+                               <p className="font-semibold capitalize">{device.type}</p>
+                               <p className="text-sm text-muted-foreground">{device.os}</p>
+                               <p className="text-xs text-muted-foreground">{device.browser}</p>
+                             </div>
+                           </div>
+                           <Badge variant="secondary" className="text-xs">
+                             {device.id}
+                           </Badge>
+                         </div>
+                       </div>
+                     </Card>
                   ))}
                 </div>
               ) : (
@@ -677,20 +672,20 @@ export default function UserDetailPage() {
                               Shared Devices ({connectedUser.shared_device_count})
                             </p>
                           </div>
-                          <div className="grid gap-2 md:grid-cols-2">
-                            {connectedUser.shared_devices.map((device) => (
-                              <div key={device.id} className="flex items-center gap-2 p-2 bg-muted/50 rounded-md border">
-                                {getDeviceIcon(device.type)}
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium truncate">{device.type} - {device.os}</p>
-                                  <p className="text-xs text-muted-foreground truncate">{device.browser}</p>
-                                </div>
-                                <Badge variant="secondary" className="text-xs shrink-0">
-                                  {device.id.substring(0, 8)}...
-                                </Badge>
-                              </div>
-                            ))}
-                          </div>
+                                                     <div className="space-y-2">
+                             {connectedUser.shared_devices.map((device) => (
+                               <div key={device.id} className="flex items-center gap-2 p-2 bg-muted/50 rounded-md border">
+                                 {getDeviceIcon(device.type)}
+                                 <div className="flex-1 min-w-0">
+                                   <p className="text-sm font-medium truncate">{device.type} - {device.os}</p>
+                                   <p className="text-xs text-muted-foreground truncate">{device.browser}</p>
+                                 </div>
+                                 <Badge variant="secondary" className="text-xs shrink-0">
+                                   {device.id}
+                                 </Badge>
+                               </div>
+                             ))}
+                           </div>
                         </div>
                       </div>
                     </Card>

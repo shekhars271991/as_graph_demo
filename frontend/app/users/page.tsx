@@ -1,11 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Search, User, Mail, MapPin, Calendar, Shield, ChevronLeft, ChevronRight, Loader2, X, CreditCard, DollarSign, Clock, ArrowRight, Eye, Filter } from 'lucide-react'
+import { Search, User, Mail, MapPin, Calendar, Shield, ChevronLeft, ChevronRight, Loader2, X, CreditCard, DollarSign, Clock, ArrowRight, Eye } from 'lucide-react'
 import { api } from '@/lib/api'
 import Link from 'next/link'
 
@@ -62,12 +62,10 @@ export default function UsersPage() {
   const [pageSize] = useState(20) // Increased page size for list view
   const [sortBy, setSortBy] = useState<'name' | 'risk_score' | 'signup_date'>('name')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
-  const [riskFilter, setRiskFilter] = useState<'all' | 'low' | 'medium' | 'high'>('all')
-
   // Load all users on component mount
   useEffect(() => {
     loadAllUsers()
-  }, [currentPage, sortBy, sortOrder, riskFilter])
+  }, [currentPage, sortBy, sortOrder])
 
   const loadAllUsers = async () => {
     setLoading(true)
@@ -75,14 +73,6 @@ export default function UsersPage() {
       const response = await api.get(`/users?page=${currentPage}&page_size=${pageSize}`)
       const data: PaginatedUsers = response.data
       let filteredUsers = data.users || []
-      
-      // Apply risk filter
-      if (riskFilter !== 'all') {
-        filteredUsers = filteredUsers.filter(user => {
-          const risk = getRiskLevel(user.risk_score)
-          return risk.level.toLowerCase() === riskFilter
-        })
-      }
       
       // Apply sorting
       filteredUsers.sort((a, b) => {
@@ -139,6 +129,14 @@ export default function UsersPage() {
     searchUsers()
   }
 
+  const handleDirectUserLookup = () => {
+    if (!searchQuery.trim()) return
+    
+    const userId = searchQuery.trim()
+    // Navigate directly to the user profile
+    window.location.href = `/users/${userId}`
+  }
+
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage)
   }
@@ -177,60 +175,34 @@ export default function UsersPage() {
         </p>
       </div>
 
-      {/* Search and Filters */}
+      {/* Quick User Lookup */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5" />
-            Search & Filters
+            <User className="h-5 w-5" />
+            Quick User Lookup
           </CardTitle>
+          <CardDescription>
+            Enter a user ID to directly view their profile
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent>
           <div className="flex gap-2">
             <Input
-              placeholder="Search by user ID or name..."
+              placeholder="Enter user ID (e.g., U0006)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              onKeyPress={(e) => e.key === 'Enter' && handleDirectUserLookup()}
               className="flex-1"
             />
-            <Button onClick={handleSearch} disabled={searchLoading}>
+            <Button onClick={handleDirectUserLookup} disabled={searchLoading || !searchQuery.trim()}>
               {searchLoading ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
-                <Search className="h-4 w-4 mr-2" />
+                <ArrowRight className="h-4 w-4 mr-2" />
               )}
-              {searchLoading ? 'Searching...' : 'Search'}
+              {searchLoading ? 'Loading...' : 'View Profile'}
             </Button>
-            {searchQuery && (
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setSearchQuery('')
-                  setCurrentPage(1)
-                  loadAllUsers()
-                }}
-              >
-                Clear
-              </Button>
-            )}
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Risk Level:</span>
-              <select
-                value={riskFilter}
-                onChange={(e) => setRiskFilter(e.target.value as any)}
-                className="px-3 py-1 border rounded-md text-sm"
-              >
-                <option value="all">All</option>
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-            </div>
           </div>
         </CardContent>
       </Card>
