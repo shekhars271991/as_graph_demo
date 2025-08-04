@@ -441,6 +441,19 @@ async def create_transfer_relationship(from_account_id: str, to_account_id: str,
         logger.error(f"❌ Failed to create transfer relationship: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to create transfer relationship: {str(e)}")
 
+@app.get("/user/{user_id}/connected-devices")
+async def get_user_connected_devices(user_id: str = Path(..., description="User ID")):
+    """Get users who share devices with the specified user"""
+    try:
+        connected_users = await graph_service.get_connected_device_users(user_id)
+        return {
+            "user_id": user_id,
+            "connected_users": connected_users,
+            "total_connections": len(connected_users)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get connected device users: {str(e)}")
+
 if __name__ == "__main__":
     args = parse_arguments() # Parse arguments here
     logger.info(f"Parsed arguments: delete={args.delete}, load_users={args.load_users}, host={args.host}, port={args.port}")

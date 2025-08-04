@@ -16,6 +16,7 @@ from models.schemas import (
     User, Account, Device, Transaction, UserSummary, TransactionDetail,
     DashboardStats, SearchResult, FraudRiskLevel, TransactionStatus
 )
+from typing import List, Dict, Any
 
 # Get logger for graph service
 logger = logging.getLogger('fraud_detection.graph')
@@ -179,11 +180,22 @@ class GraphService:
                     # Create devices for this user
                     for device_data in user_data.get('devices', []):
                         try:
-                            def create_device():
-                                return self.client.add_v("device").property("device_id", device_data['id']).property("type", device_data['type']).property("os", device_data['os']).property("browser", device_data['browser']).property("fingerprint", device_data['fingerprint']).property("first_seen", device_data['first_seen']).property("last_login", device_data['last_login']).property("login_count", device_data['login_count']).next()
+                            # Check if device already exists
+                            def find_device():
+                                return self.client.V().has_label("device").has("device_id", device_data['id']).to_list()
                             
-                            device_vertex = await loop.run_in_executor(None, create_device)
-                            devices_created += 1
+                            existing_devices = await loop.run_in_executor(None, find_device)
+                            
+                            if existing_devices:
+                                # Device already exists, use it
+                                device_vertex = existing_devices[0]
+                            else:
+                                # Device doesn't exist, create it
+                                def create_device():
+                                    return self.client.add_v("device").property("device_id", device_data['id']).property("type", device_data['type']).property("os", device_data['os']).property("browser", device_data['browser']).property("fingerprint", device_data['fingerprint']).property("first_seen", device_data['first_seen']).property("last_login", device_data['last_login']).property("login_count", device_data['login_count']).next()
+                                
+                                device_vertex = await loop.run_in_executor(None, create_device)
+                                devices_created += 1
                             
                             # Link user to device
                             def create_device_usage():
@@ -1527,4 +1539,115 @@ class GraphService:
             
         except Exception as e:
             logger.error(f"Error in get_transaction_fraud_results: {e}")
+            return [] 
+
+    async def get_connected_device_users(self, user_id: str) -> List[Dict[str, Any]]:
+        """Get users who share devices with the specified user"""
+        try:
+            if not self.client:
+                # Mock mode - find users sharing devices from in-memory data
+                if not self.users_data:
+                    return []
+                
+                target_user = next((u for u in self.users_data if u['id'] == user_id), None)
+                if not target_user:
+                    return []
+                
+                target_device_ids = {device['id'] for device in target_user.get('devices', [])}
+                if not target_device_ids:
+                    return []
+                
+                connected_users = []
+                for user in self.users_data:
+                    if user['id'] == user_id:
+                        continue
+                    
+                    user_device_ids = {device['id'] for device in user.get('devices', [])}
+                    shared_devices = target_device_ids.intersection(user_device_ids)
+                    
+                    if shared_devices:
+                        # Get device details for shared devices
+                        shared_device_details = []
+                        for device in user.get('devices', []):
+                            if device['id'] in shared_devices:
+                                shared_device_details.append({
+                                    'id': device['id'],
+                                    'type': device['type'],
+                                    'os': device['os'],
+                                    'browser': device['browser']
+                                })
+                        
+                        connected_users.append({
+                            'user_id': user['id'],
+                            'name': user['name'],
+                            'email': user['email'],
+                            'risk_score': user.get('risk_score', 0.0),
+                            'shared_devices': shared_device_details,
+                            'shared_device_count': len(shared_devices)
+                        })
+                
+                return connected_users
+            
+            # Real graph mode
+            import asyncio
+            loop = asyncio.get_event_loop()
+            
+            def find_connected_users():
+                # Find all devices used by the target user
+                user_devices = self.client.V().has_label("user").has("user_id", user_id).out("USES_DEVICE").to_list()
+                
+                if not user_devices:
+                    return []
+                
+                connected_users = []
+                device_to_users = {}
+                
+                # For each device, find all users who use it
+                for device in user_devices:
+                    device_props = self.client.V(device).value_map().next()
+                    device_id = device_props.get('device_id', [''])[0]
+                    
+                    # Find all users who use this device
+                    users_with_device = self.client.V(device).in_("USES_DEVICE").has_label("user").to_list()
+                    
+                    for user_vertex in users_with_device:
+                        user_props = self.client.V(user_vertex).value_map().next()
+                        current_user_id = user_props.get('user_id', [''])[0]
+                        
+                        # Skip the target user
+                        if current_user_id == user_id:
+                            continue
+                        
+                        if current_user_id not in device_to_users:
+                            device_to_users[current_user_id] = {
+                                'user_props': user_props,
+                                'shared_devices': []
+                            }
+                        
+                        # Add device info
+                        device_to_users[current_user_id]['shared_devices'].append({
+                            'id': device_id,
+                            'type': device_props.get('type', [''])[0],
+                            'os': device_props.get('os', [''])[0],
+                            'browser': device_props.get('browser', [''])[0]
+                        })
+                
+                # Convert to final format
+                for user_id_key, data in device_to_users.items():
+                    user_props = data['user_props']
+                    connected_users.append({
+                        'user_id': user_id_key,
+                        'name': user_props.get('name', [''])[0],
+                        'email': user_props.get('email', [''])[0],
+                        'risk_score': user_props.get('risk_score', [0.0])[0],
+                        'shared_devices': data['shared_devices'],
+                        'shared_device_count': len(data['shared_devices'])
+                    })
+                
+                return connected_users
+            
+            return await loop.run_in_executor(None, find_connected_users)
+            
+        except Exception as e:
+            logger.error(f"Error getting connected device users for {user_id}: {e}")
             return [] 

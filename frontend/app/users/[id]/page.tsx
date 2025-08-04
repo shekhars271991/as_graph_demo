@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -24,7 +24,11 @@ import {
   Activity,
   Phone,
   Building,
-  ExternalLink
+  ExternalLink,
+  Smartphone,
+  Monitor,
+  Tablet,
+  Users
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import Link from 'next/link'
@@ -66,6 +70,22 @@ interface Transaction {
   fraud_type?: string
 }
 
+interface Device {
+  id: string
+  type: string
+  os: string
+  browser: string
+}
+
+interface ConnectedDeviceUser {
+  user_id: string
+  name: string
+  email: string
+  risk_score: number
+  shared_devices: Device[]
+  shared_device_count: number
+}
+
 interface UserSummary {
   user: User
   accounts: Account[]
@@ -75,6 +95,7 @@ interface UserSummary {
   total_amount_received: number
   fraud_risk_level: string
   connected_users: string[]
+  devices?: Device[]
 }
 
 export default function UserDetailPage() {
@@ -82,7 +103,9 @@ export default function UserDetailPage() {
   const userId = params.id as string
   
   const [userDetails, setUserDetails] = useState<UserSummary | null>(null)
+  const [connectedDeviceUsers, setConnectedDeviceUsers] = useState<ConnectedDeviceUser[]>([])
   const [loading, setLoading] = useState(true)
+  const [connectionsLoading, setConnectionsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('overview')
 
@@ -104,6 +127,20 @@ export default function UserDetailPage() {
       setError('Failed to load user details. Please try again.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadConnectedDeviceUsers = async () => {
+    if (!userId || connectedDeviceUsers.length > 0) return // Don't reload if already loaded
+    
+    setConnectionsLoading(true)
+    try {
+      const response = await api.get(`/user/${userId}/connected-devices`)
+      setConnectedDeviceUsers(response.data.connected_users || [])
+    } catch (error) {
+      console.error('Failed to load connected device users:', error)
+    } finally {
+      setConnectionsLoading(false)
     }
   }
 
@@ -137,6 +174,26 @@ export default function UserDetailPage() {
       style: 'currency',
       currency: 'INR'
     }).format(amount)
+  }
+
+  const getDeviceIcon = (deviceType: string) => {
+    switch (deviceType.toLowerCase()) {
+      case 'mobile':
+        return <Smartphone className="h-4 w-4" />
+      case 'desktop':
+        return <Monitor className="h-4 w-4" />
+      case 'tablet':
+        return <Tablet className="h-4 w-4" />
+      default:
+        return <Monitor className="h-4 w-4" />
+    }
+  }
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value)
+    if (value === 'connections') {
+      loadConnectedDeviceUsers()
+    }
   }
 
   if (loading) {
@@ -264,11 +321,12 @@ export default function UserDetailPage() {
       </div>
 
       {/* Main Content Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="accounts">Accounts</TabsTrigger>
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
+          <TabsTrigger value="devices">Devices</TabsTrigger>
           <TabsTrigger value="connections">Connections</TabsTrigger>
         </TabsList>
 
@@ -502,29 +560,41 @@ export default function UserDetailPage() {
           </Card>
         </TabsContent>
 
-        {/* Connections Tab */}
-        <TabsContent value="connections" className="space-y-4">
+        {/* Devices Tab */}
+        <TabsContent value="devices" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <ExternalLink className="h-5 w-5" />
-                Connected Users ({userDetails.connected_users.length})
+                <Smartphone className="h-5 w-5" />
+                User Devices ({userDetails.devices?.length || 0})
               </CardTitle>
+              <CardDescription>
+                Devices associated with this user account
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              {userDetails.connected_users.length > 0 ? (
-                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                  {userDetails.connected_users.map((userId) => (
-                    <Card key={userId} className="p-4">
-                      <div className="flex items-center gap-3">
-                        <User className="h-8 w-8 text-muted-foreground" />
-                        <div>
-                          <p className="font-semibold">User {userId}</p>
-                          <Link href={`/users/${userId}`}>
-                            <Button variant="outline" size="sm" className="mt-2">
-                              View Profile
-                            </Button>
-                          </Link>
+              {userDetails.devices && userDetails.devices.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
+                  {userDetails.devices.map((device) => (
+                    <Card key={device.id} className="p-4 hover:shadow-md transition-shadow">
+                      <div className="space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            {getDeviceIcon(device.type)}
+                            <div>
+                              <p className="font-semibold capitalize">{device.type}</p>
+                              <p className="text-sm text-muted-foreground">{device.os}</p>
+                              <p className="text-xs text-muted-foreground">{device.browser}</p>
+                            </div>
+                          </div>
+                          <Badge variant="secondary" className="text-xs">
+                            {device.id}
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Device ID</span>
+                          <code className="text-xs bg-muted px-2 py-1 rounded">{device.id}</code>
                         </div>
                       </div>
                     </Card>
@@ -532,10 +602,131 @@ export default function UserDetailPage() {
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <ExternalLink className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">No connected users found.</p>
+                  <Smartphone className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No devices found for this user.</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    This user doesn't have any registered devices.
+                  </p>
                 </div>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Connections Tab */}
+        <TabsContent value="connections" className="space-y-6">
+          {/* Device Connections Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Smartphone className="h-5 w-5" />
+                Device Connections
+              </CardTitle>
+              <CardDescription>
+                Users who share devices with this user
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {connectionsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Loading device connections...</span>
+                  </div>
+                </div>
+              ) : connectedDeviceUsers.length > 0 ? (
+                <div className="space-y-4">
+                  {connectedDeviceUsers.map((connectedUser) => (
+                    <Card key={connectedUser.user_id} className="p-4 hover:shadow-md transition-all duration-200 cursor-pointer group" 
+                          onClick={() => window.open(`/users/${connectedUser.user_id}`, '_blank')}>
+                      <div className="space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="relative">
+                              <User className="h-10 w-10 text-muted-foreground group-hover:text-primary transition-colors" />
+                              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                                <Smartphone className="h-2.5 w-2.5 text-white" />
+                              </div>
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <p className="font-semibold text-lg group-hover:text-primary transition-colors">
+                                  {connectedUser.name}
+                                </p>
+                                <Badge 
+                                  variant={connectedUser.risk_score > 50 ? 'destructive' : connectedUser.risk_score > 25 ? 'default' : 'secondary'}
+                                  className="text-xs"
+                                >
+                                  Risk: {connectedUser.risk_score.toFixed(1)}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground">{connectedUser.email}</p>
+                              <p className="text-xs text-muted-foreground">ID: {connectedUser.user_id}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">View Profile</span>
+                          </div>
+                        </div>
+                        
+                        <div className="border-t pt-3">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Smartphone className="h-4 w-4 text-muted-foreground" />
+                            <p className="text-sm font-medium text-muted-foreground">
+                              Shared Devices ({connectedUser.shared_device_count})
+                            </p>
+                          </div>
+                          <div className="grid gap-2 md:grid-cols-2">
+                            {connectedUser.shared_devices.map((device) => (
+                              <div key={device.id} className="flex items-center gap-2 p-2 bg-muted/50 rounded-md border">
+                                {getDeviceIcon(device.type)}
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium truncate">{device.type} - {device.os}</p>
+                                  <p className="text-xs text-muted-foreground truncate">{device.browser}</p>
+                                </div>
+                                <Badge variant="secondary" className="text-xs shrink-0">
+                                  {device.id.substring(0, 8)}...
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Smartphone className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No device connections found.</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    This user doesn't share any devices with other users.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Future Connection Types - Placeholder */}
+          <Card className="opacity-60">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Other Connections
+              </CardTitle>
+              <CardDescription>
+                Additional connection types will be available soon
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-6">
+                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">Coming Soon</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Transaction connections, location-based connections, and more will be available here.
+                </p>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
