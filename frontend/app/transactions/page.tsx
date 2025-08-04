@@ -498,7 +498,7 @@ export default function TransactionsPage() {
         </Card>
       </div>
 
-      {/* Search Card */}
+      {/* Search Card
       <Card>
         <CardHeader>
           <CardTitle>Search Transactions</CardTitle>
@@ -517,7 +517,7 @@ export default function TransactionsPage() {
             </Button>
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
 
       {/* Transactions Table */}
       {loading ? (

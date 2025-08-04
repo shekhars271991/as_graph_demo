@@ -477,7 +477,9 @@ export default function AdminPage() {
   const [isClient, setIsClient] = useState(false)
 
   // Fraud patterns states
-  const [selectedPatterns, setSelectedPatterns] = useState<string[]>([])
+  const [selectedPatterns, setSelectedPatterns] = useState<string[]>(
+    availablePatterns.filter(p => p.enabled).map(p => p.id)
+  )
   const [patternResults, setPatternResults] = useState<FraudResult[]>([])
   const [patternLoading, setPatternLoading] = useState(false)
   const [patterns, setPatterns] = useState<ExtendedFraudPattern[]>(availablePatterns)
@@ -701,6 +703,18 @@ export default function AdminPage() {
         ? { ...pattern, enabled: !pattern.enabled }
         : pattern
     ))
+    
+    // Also update selected patterns to stay in sync
+    setSelectedPatterns(prev => {
+      const pattern = patterns.find(p => p.id === patternId)
+      if (pattern?.enabled) {
+        // If pattern is currently enabled, it will be disabled, so remove from selection
+        return prev.filter(id => id !== patternId)
+      } else {
+        // If pattern is currently disabled, it will be enabled, so add to selection
+        return prev.includes(patternId) ? prev : [...prev, patternId]
+      }
+    })
   }
 
   const runPatterns = async () => {
@@ -1103,7 +1117,7 @@ export default function AdminPage() {
                 </span>
                 <div className="flex items-center space-x-2">
                   <Badge variant="secondary">
-                    {enabledScenarios.length} of {scenarios.length} enabled
+                    {scenarios.filter(s => s.id.startsWith('RT') && s.enabled).length} of {scenarios.filter(s => s.id.startsWith('RT')).length} enabled
                   </Badge>
                 </div>
               </CardTitle>
