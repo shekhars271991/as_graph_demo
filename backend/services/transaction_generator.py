@@ -293,9 +293,6 @@ class TransactionGeneratorService:
                 "receiver_account_id": receiver_account_id or "unknown"
             }
             
-            # Store transaction in graph database
-            await self._store_transaction_in_graph(transaction)
-            
             # Log and update counters
             self._log_transaction(transaction, "TRANSACTION")
             self.transaction_counter += 1

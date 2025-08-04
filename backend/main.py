@@ -69,7 +69,7 @@ async def lifespan(app: FastAPI):
             if "error" in result:
                 logger.error(f"Failed to load data: {result['error']}")
             else:
-                logger.info(f"✅ Data loaded successfully: {result['users']} users, {result['accounts']} accounts, {result['devices']} devices, {result['transactions']} transactions")
+                logger.info(f"✅ Data loaded successfully: {result['users']} users, {result['accounts']} accounts, {result['devices']} devices, {result['transactions']} transactions (transactions will be generated manually)")
         except Exception as e:
             logger.error(f"Error during data loading: {e}")
     
@@ -84,7 +84,7 @@ async def lifespan(app: FastAPI):
             if "error" in result:
                 logger.error(f"Failed to load data: {result['error']}")
             else:
-                logger.info(f"✅ Data loaded successfully: {result['users']} users, {result['accounts']} accounts, {result['devices']} devices, {result['transactions']} transactions")
+                logger.info(f"✅ Data loaded successfully: {result['users']} users, {result['accounts']} accounts, {result['devices']} devices, {result['transactions']} transactions (transactions will be generated manually)")
         except Exception as e:
             logger.error(f"Error during data loading: {e}")
     elif not args or (not args.delete and not args.load_users):
@@ -129,11 +129,11 @@ async def health_check():
 
 @app.post("/seed-data")
 async def seed_data():
-    """Load data from users.json file into the graph"""
+    """Load users, accounts, and devices from users.json file into the graph (no transactions)"""
     try:
         result = await graph_service.seed_sample_data()
         return {
-            "message": "Data loaded successfully from users.json",
+            "message": "Users, accounts, and devices loaded successfully from users.json (transactions must be generated manually)",
             "users_created": result["users"],
             "accounts_created": result["accounts"],
             "devices_created": result["devices"],

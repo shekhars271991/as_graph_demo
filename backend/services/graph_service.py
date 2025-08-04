@@ -206,61 +206,20 @@ class GraphService:
                             logger.error(f"Error creating device {device_data['id']}: {e}")
                             continue
                     
-                    # Create some sample transactions between accounts
-                    try:
-                        def get_user_accounts():
-                            return self.client.V().has_label("account").has("account_id", P.within([acc['id'] for acc in user_data.get('accounts', [])])).to_list()
-                        
-                        user_accounts = await loop.run_in_executor(None, get_user_accounts)
-                        
-                        if len(user_accounts) > 0:
-                            # Create 2-5 transactions per user
-                            num_transactions = random.randint(2, 5)
-                            for i in range(num_transactions):
-                                try:
-                                    # Get random source and destination accounts
-                                    source_account = random.choice(user_accounts)
-                                    destination_account = random.choice(user_accounts)
-                                    
-                                    if source_account != destination_account:
-                                        # Create transaction
-                                        amount = random.uniform(10, 1000)
-                                        transaction_id = f"T{user_data['id']}_{i+1}"
-                                        
-                                        def create_transaction():
-                                            # Create transaction vertex
-                                            transaction_vertex = self.client.add_v("transaction").property("transaction_id", transaction_id).property("amount", amount).property("timestamp", datetime.now().isoformat()).property("status", "completed").property("method", "transfer").property("ip_address", f"192.168.{random.randint(1,255)}.{random.randint(1,255)}").property("location_city", user_data['location']).property("location_country", "India").property("latitude", random.uniform(8.0, 37.0)).property("longitude", random.uniform(68.0, 97.0)).next()
-                                            
-                                            # Create TRANSFERS_TO edge from source account to transaction
-                                            self.client.add_e("TRANSFERS_TO").from_(source_account).to(transaction_vertex).iterate()
-                                            
-                                            # Create TRANSFERS_FROM edge from transaction to destination account
-                                            self.client.add_e("TRANSFERS_FROM").from_(transaction_vertex).to(destination_account).iterate()
-                                            
-                                            # Also create direct TRANSFERS_TO edge from source account to destination account (for RT1 detection)
-                                            self.client.add_e("TRANSFERS_TO").from_(source_account).to(destination_account).property("transaction_id", transaction_id).property("amount", amount).property("timestamp", datetime.now().isoformat()).property("status", "completed").property("method", "transfer").iterate()
-                                            
-                                            return transaction_vertex
-                                        
-                                        await loop.run_in_executor(None, create_transaction)
-                                        transactions_created += 1
-                                except Exception as e:
-                                    logger.error(f"Error creating transaction {i+1} for user {user_data['id']}: {e}")
-                                    continue
-                    except Exception as e:
-                        logger.error(f"Error creating transactions for user {user_data['id']}: {e}")
-                        continue
+                    # Note: Transactions are not created during data seeding
+                    # They should be generated manually through the transaction generator script
+                    logger.info(f"User {user_data['id']} accounts loaded - transactions will be generated manually")
                         
                 except Exception as e:
                     logger.error(f"Error creating user {user_data['id']}: {e}")
                     continue
             
-            logger.info(f"Graph data loaded: {users_created} users, {accounts_created} accounts, {devices_created} devices, {transactions_created} transactions")
+            logger.info(f"Graph data loaded: {users_created} users, {accounts_created} accounts, {devices_created} devices, 0 transactions (transactions will be generated manually)")
             return {
                 "users": users_created,
                 "accounts": accounts_created,
                 "devices": devices_created,
-                "transactions": transactions_created
+                "transactions": 0
             }
             
         except Exception as e:
@@ -269,7 +228,7 @@ class GraphService:
                 "users": users_created,
                 "accounts": accounts_created,
                 "devices": devices_created,
-                "transactions": transactions_created,
+                "transactions": 0,
                 "error": str(e)
             }
 
@@ -457,64 +416,143 @@ class GraphService:
             logger.error(f"Error getting user summary: {e}")
             return None
 
-    async def get_transaction_detail(self, transaction_id: str) -> Optional[TransactionDetail]:
+    async def get_transaction_detail(self, transaction_id: str) -> Optional[Dict[str, Any]]:
         """Get detailed transaction information"""
         try:
             if self.client:
                 # Query real graph - look for transaction vertex
                 loop = asyncio.get_event_loop()
                 
+                logger.info(f"Looking for transaction with ID: {transaction_id}")
+                
                 def get_transaction_vertex():
                     return self.client.V().has_label("transaction").has("transaction_id", transaction_id).to_list()
                 
                 transaction_vertices = await loop.run_in_executor(None, get_transaction_vertex)
+                logger.info(f"Found {len(transaction_vertices)} transaction vertices")
+                
                 if not transaction_vertices:
                     return None
                 
                 transaction_vertex = transaction_vertices[0]
                 
                 def get_transaction_props():
-                    return transaction_vertex.value_map().next()
+                    try:
+                        logger.info(f"Getting properties for transaction vertex: {transaction_vertex}")
+                        props = self.client.V(transaction_vertex).value_map().next()
+                        logger.info(f"Successfully got transaction properties: {props}")
+                        return props
+                    except Exception as e:
+                        logger.error(f"Error getting transaction properties: {e}")
+                        raise e
                 
                 transaction_props = await loop.run_in_executor(None, get_transaction_props)
                 
-                # Get source account (account that initiated the transaction)
+                # Get source and destination accounts from TRANSFERS_TO and TRANSFERS_FROM edges
                 def get_source_account():
-                    return self.client.V(transaction_vertex).in_("INITIATED").to_list()
+                    return self.client.V(transaction_vertex).in_("TRANSFERS_TO").to_list()
+                
+                def get_dest_account():
+                    return self.client.V(transaction_vertex).out("TRANSFERS_FROM").to_list()
                 
                 source_accounts = await loop.run_in_executor(None, get_source_account)
-                source_account = source_accounts[0] if source_accounts else None
-                
-                # Get destination account from TRANSFERS_TO edge
-                def get_dest_account():
-                    return self.client.V(source_account).out("TRANSFERS_TO").to_list()
-                
                 dest_accounts = await loop.run_in_executor(None, get_dest_account)
+                
+                source_account = source_accounts[0] if source_accounts else None
                 dest_account = dest_accounts[0] if dest_accounts else None
                 
+                logger.info(f"Found source accounts: {len(source_accounts)}, dest accounts: {len(dest_accounts)}")
+                
+               
+                
+                # Only proceed if we have both accounts AND their users
                 if source_account and dest_account:
                     def get_source_props():
-                        return source_account.value_map().next()
+                        return self.client.V(source_account).value_map().next()
                     
                     def get_dest_props():
-                        return dest_account.value_map().next()
+                        return self.client.V(dest_account).value_map().next()
                     
                     source_props = await loop.run_in_executor(None, get_source_props)
                     dest_props = await loop.run_in_executor(None, get_dest_props)
                     
-                    return TransactionDetail(
-                        id=transaction_props.get('transaction_id', [''])[0],
-                        sender_id=source_props.get('account_id', [''])[0],
-                        receiver_id=dest_props.get('account_id', [''])[0],
-                        amount=transaction_props.get('amount', [0.0])[0],
-                        currency="INR",
-                        timestamp=transaction_props.get('timestamp', [''])[0],
-                        location=transaction_props.get('location_city', [''])[0],
-                        status=transaction_props.get('status', ['completed'])[0],
-                        fraud_score=0.0,  # Not stored in new model
-                        device_id=None
-                    )
+                    # Get user information for source account
+                    def get_source_user():
+                        return self.client.V(source_account).in_("OWNS").to_list()
+                    
+                    source_users = await loop.run_in_executor(None, get_source_user)
+                    source_user = source_users[0] if source_users else None
+                    
+                    # Get user information for destination account
+                    def get_dest_user():
+                        return self.client.V(dest_account).in_("OWNS").to_list()
+                    
+                    dest_users = await loop.run_in_executor(None, get_dest_user)
+                    dest_user = dest_users[0] if dest_users else None
+                    
+                    # Get user properties
+                    source_user_props = {}
+                    dest_user_props = {}
+                    
+                    if source_user:
+                        def get_source_user_props():
+                            return self.client.V(source_user).value_map().next()
+                        source_user_props = await loop.run_in_executor(None, get_source_user_props)
+                    
+                    if dest_user:
+                        def get_dest_user_props():
+                            return self.client.V(dest_user).value_map().next()
+                        dest_user_props = await loop.run_in_executor(None, get_dest_user_props)
+                    
+                    # Only return data if we have BOTH users - no mock data
+                    if not source_user or not dest_user:
+                        logger.warning(f"Transaction {transaction_id} missing source user ({bool(source_user)}) or dest user ({bool(dest_user)}) - returning None")
+                        return None
+                    
+                    # Build transaction data - ONLY from database properties
+                    transaction_data = {
+                        "id": transaction_props.get('transaction_id', [''])[0],
+                        "amount": transaction_props.get('amount', [0.0])[0],
+                        "currency": transaction_props.get('currency', [''])[0],
+                        "timestamp": transaction_props.get('timestamp', [''])[0],
+                        "status": transaction_props.get('status', [''])[0],
+                        "transaction_type": transaction_props.get('type', [''])[0],
+                        "location_city": transaction_props.get('location', [''])[0]
+                    }
+                    
+                    # Build account data - ONLY from database properties
+                    source_account_data = {
+                        "id": source_props.get('account_id', [''])[0],
+                        "account_type": source_props.get('type', [''])[0],
+                        "balance": source_props.get('balance', [0.0])[0],
+                        "created_date": source_props.get('created_date', [''])[0],
+                        "user_id": source_user_props.get('user_id', [''])[0],
+                        "user_name": source_user_props.get('name', [''])[0],
+                        "user_email": source_user_props.get('email', [''])[0]
+                    }
+                    
+                    destination_account_data = {
+                        "id": dest_props.get('account_id', [''])[0],
+                        "account_type": dest_props.get('type', [''])[0],
+                        "balance": dest_props.get('balance', [0.0])[0],
+                        "created_date": dest_props.get('created_date', [''])[0],
+                        "user_id": dest_user_props.get('user_id', [''])[0],
+                        "user_name": dest_user_props.get('name', [''])[0],
+                        "user_email": dest_user_props.get('email', [''])[0]
+                    }
+                  
+                    # Get fraud results (empty for now)
+                    fraud_results = []
+                    
+                    return {
+                        "transaction": transaction_data,
+                        "source_account": source_account_data,
+                        "destination_account": destination_account_data,
+                        "fraud_results": fraud_results
+                    }
                 else:
+                    # No mock data - return None if we don't have complete real data
+                    logger.warning(f"Transaction {transaction_id} found but missing source/destination accounts or users - returning None")
                     return None
             else:
                 # Mock mode - no transactions available
