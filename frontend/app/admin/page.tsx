@@ -30,7 +30,9 @@ import {
   Target,
   Globe,
   MapPin,
-  TrendingUp
+  TrendingUp,
+  Users,
+  CreditCard
 } from 'lucide-react'
 
 interface Transaction {
@@ -71,6 +73,22 @@ interface FraudScenario {
   detailedDescription: string
 }
 
+interface FraudPattern {
+  id: string
+  name: string
+  description: string
+  risk_level: string
+}
+
+interface FraudResult {
+  pattern_id: string
+  pattern_name: string
+  detected_entities: any[]
+  risk_score: number
+  timestamp: string
+  details: any
+}
+
 const fraudScenarios: FraudScenario[] = [
   {
     id: 'A',
@@ -95,7 +113,7 @@ const fraudScenarios: FraudScenario[] = [
     enabled: true,
     priority: 'Phase 1',
     keyIndicators: [
-              'Large credit (₹8,00,000-₹40,00,000)',
+            'Large credit (₹8,00,000-₹40,00,000)',
       'Exactly 4 equal debits within 4 hours',
       'Each debit ≈ 1/4 of credit amount',
       'All debits to same destination'
@@ -112,7 +130,7 @@ const fraudScenarios: FraudScenario[] = [
     priority: 'Phase 2',
     keyIndicators: [
       '3+ ATM withdrawal transactions',
-              'Each withdrawal ₹4,00,000-₹8,00,000',
+            'Each withdrawal ₹4,00,000-₹8,00,000',
       'Self-directed transactions'
     ],
     commonUseCase: 'Cash extraction for money laundering',
@@ -142,9 +160,9 @@ const fraudScenarios: FraudScenario[] = [
     enabled: false,
     priority: 'Phase 2',
     keyIndicators: [
-              'Initial credit ₹4,00,000-₹8,00,000',
+            'Initial credit ₹4,00,000-₹8,00,000',
       '3+ outgoing transfers',
-              'Transfer amounts ₹4,00,000-₹5,60,000'
+            'Transfer amounts ₹4,00,000-₹5,60,000'
     ],
     commonUseCase: 'Account takeover, identity theft',
     detailedDescription: 'A pattern mimicking legitimate salary deposits but followed by suspicious outgoing transfers. This suggests account takeover or identity theft where fraudsters mimic normal salary patterns.'
@@ -158,7 +176,7 @@ const fraudScenarios: FraudScenario[] = [
     priority: 'Phase 2',
     keyIndicators: [
       '30+ days dormancy',
-              'Sudden large credit ₹8,00,000-₹40,00,000',
+            'Sudden large credit ₹8,00,000-₹40,00,000',
       '4 equal debits following',
       'Total debits ≈ credit amount'
     ],
@@ -189,13 +207,52 @@ const fraudScenarios: FraudScenario[] = [
     enabled: false,
     priority: 'Phase 3',
     keyIndicators: [
-              '3+ large transfers ₹8,00,000-₹40,00,000',
+            '3+ large transfers ₹8,00,000-₹40,00,000',
       'High-risk locations',
       'Jamtara, Bharatpur, Alwar',
       'Region-specific patterns'
     ],
     commonUseCase: 'Regional fraud networks, location-based scams',
     detailedDescription: 'Fraud patterns specific to the Indian financial landscape, targeting known fraud-prone regions. This includes location-based scams and regional fraud networks.'
+  }
+]
+
+const availablePatterns: FraudPattern[] = [
+  {
+    id: 'circular_flow',
+    name: 'Circular Transaction Flow',
+    description: 'Detect circular money flows between users',
+    risk_level: 'high'
+  },
+  {
+    id: 'shared_device',
+    name: 'Shared Device Transactions',
+    description: 'Detect transactions from the same device by different users',
+    risk_level: 'medium'
+  },
+  {
+    id: 'transaction_burst',
+    name: 'Transaction Burst',
+    description: 'Detect rapid successive transactions from same user',
+    risk_level: 'medium'
+  },
+  {
+    id: 'high_amount',
+    name: 'High Amount Transactions',
+    description: 'Detect unusually high transaction amounts',
+    risk_level: 'high'
+  },
+  {
+    id: 'cross_location',
+    name: 'Cross-Location Transactions',
+    description: 'Detect transactions between users in different locations',
+    risk_level: 'medium'
+  },
+  {
+    id: 'new_user_high_activity',
+    name: 'New User High Activity',
+    description: 'Detect new users with high transaction activity',
+    risk_level: 'high'
   }
 ]
 
@@ -217,6 +274,11 @@ export default function AdminPage() {
   const [showScenarioDialog, setShowScenarioDialog] = useState(false)
   const [expandedScenarios, setExpandedScenarios] = useState<Set<string>>(new Set())
   const [isClient, setIsClient] = useState(false)
+
+  // Fraud patterns states
+  const [selectedPatterns, setSelectedPatterns] = useState<string[]>([])
+  const [patternResults, setPatternResults] = useState<FraudResult[]>([])
+  const [patternLoading, setPatternLoading] = useState(false)
 
   // Ensure component only renders on client side
   useEffect(() => {
@@ -422,6 +484,58 @@ export default function AdminPage() {
     setShowScenarioDialog(true)
   }
 
+  // Fraud pattern functions
+  const togglePattern = (patternId: string) => {
+    setSelectedPatterns(prev => 
+      prev.includes(patternId) 
+        ? prev.filter(id => id !== patternId)
+        : [...prev, patternId]
+    )
+  }
+
+  const runPatterns = async () => {
+    if (selectedPatterns.length === 0) return
+    
+    setPatternLoading(true)
+    try {
+      const response = await fetch('http://localhost:4000/fraud-patterns/run', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(selectedPatterns)
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setPatternResults(data.results || [])
+      } else {
+        console.error('Failed to run fraud patterns')
+      }
+    } catch (error) {
+      console.error('Failed to run fraud patterns:', error)
+    } finally {
+      setPatternLoading(false)
+    }
+  }
+
+  const runAllPatterns = async () => {
+    setPatternLoading(true)
+    try {
+      const response = await fetch('http://localhost:4000/detect/fraudulent-transactions')
+      if (response.ok) {
+        const data = await response.json()
+        setPatternResults(data.results || [])
+      } else {
+        console.error('Failed to run all fraud patterns')
+      }
+    } catch (error) {
+      console.error('Failed to run all fraud patterns:', error)
+    } finally {
+      setPatternLoading(false)
+    }
+  }
+
   const getFraudScoreColor = (score: number) => {
     if (score >= 80) return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
     if (score >= 50) return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
@@ -444,6 +558,15 @@ export default function AdminPage() {
       case 'Phase 2': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
       case 'Phase 3': return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
       default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+    }
+  }
+
+  const getPatternRiskColor = (level: string) => {
+    switch (level) {
+      case 'high': return 'destructive'
+      case 'medium': return 'secondary'
+      case 'low': return 'outline'
+      default: return 'default'
     }
   }
 
@@ -506,14 +629,18 @@ export default function AdminPage() {
 
       {/* Main Content with Tabs */}
       <Tabs defaultValue="generation" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="generation" className="flex items-center space-x-2">
             <Activity className="w-4 h-4" />
             <span>Transaction Generation</span>
           </TabsTrigger>
-          <TabsTrigger value="fraud-detection" className="flex items-center space-x-2">
+          <TabsTrigger value="real-time-fraud" className="flex items-center space-x-2">
+            <Zap className="w-4 h-4" />
+            <span>Real Time Fraud Scenarios</span>
+          </TabsTrigger>
+          <TabsTrigger value="fraud-patterns" className="flex items-center space-x-2">
             <Shield className="w-4 h-4" />
-            <span>Fraud Detection</span>
+            <span>Fraud Pattern</span>
           </TabsTrigger>
         </TabsList>
 
@@ -754,15 +881,15 @@ export default function AdminPage() {
           </Card>
         </TabsContent>
 
-        {/* Fraud Detection Tab */}
-        <TabsContent value="fraud-detection" className="space-y-6">
+        {/* Real Time Fraud Scenarios Tab */}
+        <TabsContent value="real-time-fraud" className="space-y-6">
           {/* Fraud Detection Scenarios */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span className="flex items-center space-x-2">
                   <Shield className="w-5 h-5" />
-                  <span>Fraud Detection Scenarios</span>
+                  <span>Real Time Fraud Scenarios</span>
                 </span>
                 <div className="flex items-center space-x-2">
                   <Badge variant="secondary">
@@ -995,6 +1122,148 @@ export default function AdminPage() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Fraud Pattern Tab */}
+        <TabsContent value="fraud-patterns" className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight mb-2">Fraud Pattern Detection</h2>
+            <p className="text-muted-foreground">
+              Run fraud detection algorithms and analyze suspicious patterns
+            </p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5" />
+                  Available Patterns
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {availablePatterns.map((pattern) => (
+                  <div
+                    key={pattern.id}
+                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                      selectedPatterns.includes(pattern.id)
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                    onClick={() => togglePattern(pattern.id)}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-medium">{pattern.name}</h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {pattern.description}
+                        </p>
+                      </div>
+                      <Badge variant={getPatternRiskColor(pattern.risk_level) as any}>
+                        {pattern.risk_level}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+                
+                <div className="flex gap-2 pt-4">
+                  <Button 
+                    onClick={runPatterns} 
+                    disabled={patternLoading || selectedPatterns.length === 0}
+                    className="flex-1"
+                  >
+                    <Shield className="h-4 w-4 mr-2" />
+                    Run Selected
+                  </Button>
+                  <Button 
+                    onClick={runAllPatterns} 
+                    disabled={patternLoading}
+                    variant="outline"
+                  >
+                    <Activity className="h-4 w-4 mr-2" />
+                    Run All
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Detection Results
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {patternLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
+                ) : patternResults.length > 0 ? (
+                  <div className="space-y-4">
+                    {patternResults.map((result, index) => (
+                      <div key={index} className="p-4 border rounded-lg">
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="font-medium">{result.pattern_name}</h3>
+                          <Badge variant="destructive">
+                            Score: {result.risk_score.toFixed(1)}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Detected {result.detected_entities.length} entities
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(result.timestamp).toLocaleString()}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center py-8">
+                    <p className="text-muted-foreground">
+                      No results yet. Run a pattern to see results.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {patternResults.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Summary</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-destructive">
+                      {patternResults.length}
+                    </div>
+                    <p className="text-sm text-muted-foreground">Patterns Detected</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold">
+                      {patternResults.reduce((sum, r) => sum + r.detected_entities.length, 0)}
+                    </div>
+                    <p className="text-sm text-muted-foreground">Total Entities</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-yellow-600">
+                      {(patternResults.reduce((sum, r) => sum + r.risk_score, 0) / patternResults.length).toFixed(1)}
+                    </div>
+                    <p className="text-sm text-muted-foreground">Avg Risk Score</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600">
+                      {patternResults.filter(r => r.risk_score > 70).length}
+                    </div>
+                    <p className="text-sm text-muted-foreground">High Risk</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
 
