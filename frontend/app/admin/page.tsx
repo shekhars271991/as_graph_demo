@@ -71,6 +71,7 @@ interface FraudScenario {
   keyIndicators: string[]
   commonUseCase: string
   detailedDescription: string
+  disabled?: boolean // For completely disabling scenarios from UI
 }
 
 interface FraudPattern {
@@ -134,7 +135,8 @@ const fraudScenarios: FraudScenario[] = [
       'Repeated interaction patterns'
     ],
     commonUseCase: 'Money mule ring detection, coordinated fraud networks',
-    detailedDescription: 'Detects patterns of repeated small transactions between accounts that form rings or networks, indicating coordinated money mule operations using 2-hop graph analysis.'
+    detailedDescription: 'Detects patterns of repeated small transactions between accounts that form rings or networks, indicating coordinated money mule operations using 2-hop graph analysis.',
+    disabled: true
   },
   {
     id: 'RT4',
@@ -149,7 +151,23 @@ const fraudScenarios: FraudScenario[] = [
       'Pre-computed risk assessment'
     ],
     commonUseCase: 'Leveraging historical analysis for real-time decisions',
-    detailedDescription: 'Utilizes fraud scores computed during batch processing for real-time transaction assessment, combining historical pattern analysis with immediate decision making.'
+    detailedDescription: 'Utilizes fraud scores computed during batch processing for real-time transaction assessment, combining historical pattern analysis with immediate decision making.',
+    disabled: true
+  },
+  {
+    id: 'RT5',
+    name: 'Transaction Burst',
+    description: 'Detect rapid successive transactions from same user',
+    riskLevel: 'High',
+    enabled: true,
+    priority: 'Phase 1',
+    keyIndicators: [
+      'Multiple transactions in short time window',
+      'Same user account activity',
+      'Rapid transaction succession pattern'
+    ],
+    commonUseCase: 'Account takeover, automated fraud attacks',
+    detailedDescription: 'Real-time detection of rapid successive transactions from the same user account, which may indicate account takeover or automated fraud attacks.'
   },
   // Batch scenarios (A-H, corresponding to BT scenarios)
   {
@@ -282,6 +300,7 @@ const fraudScenarios: FraudScenario[] = [
 interface ExtendedFraudPattern extends FraudPattern {
   priority: 'Phase 1' | 'Phase 2' | 'Phase 3'
   enabled?: boolean
+  disabled?: boolean
   keyIndicators?: string[]
   commonUseCase?: string
   detailedDescription?: string
@@ -310,7 +329,8 @@ const availablePatterns: ExtendedFraudPattern[] = [
     description: 'Organized money distribution pattern',
     risk_level: 'high',
     priority: 'Phase 1',
-    enabled: true,
+    enabled: false,
+    disabled: true,
     keyIndicators: [
       'Large credit (₹8,00,000-₹40,00,000)',
       'Exactly 4 equal debits within 4 hours',
@@ -339,21 +359,26 @@ const availablePatterns: ExtendedFraudPattern[] = [
     name: 'Circular Transaction Flow',
     description: 'Detect circular money flows between users',
     risk_level: 'high',
-    priority: 'Phase 1'
+    priority: 'Phase 1',
+    enabled: false,
+    disabled: true
   },
   {
     id: 'high_amount',
     name: 'High Amount Transactions',
     description: 'Detect unusually high transaction amounts',
     risk_level: 'high',
-    priority: 'Phase 1'
+    priority: 'Phase 1',
+    enabled: false,
+    disabled: true
   },
   {
     id: 'new_user_high_activity',
     name: 'New User High Activity',
     description: 'Detect new users with high transaction activity',
     risk_level: 'high',
-    priority: 'Phase 1'
+    priority: 'Phase 1',
+    enabled: true
   },
   
   // Phase 2 - Medium Priority Patterns
@@ -364,6 +389,7 @@ const availablePatterns: ExtendedFraudPattern[] = [
     risk_level: 'medium',
     priority: 'Phase 2',
     enabled: false,
+    disabled: true,
     keyIndicators: [
       '3+ ATM withdrawal transactions',
       'Each withdrawal ₹4,00,000-₹8,00,000',
@@ -379,6 +405,7 @@ const availablePatterns: ExtendedFraudPattern[] = [
     risk_level: 'medium',
     priority: 'Phase 2',
     enabled: false,
+    disabled: true,
     keyIndicators: [
       'Initial credit ₹4,00,000-₹8,00,000',
       '3+ outgoing transfers',
@@ -394,6 +421,7 @@ const availablePatterns: ExtendedFraudPattern[] = [
     risk_level: 'high',
     priority: 'Phase 2',
     enabled: false,
+    disabled: true,
     keyIndicators: [
       '30+ days dormancy',
       'Sudden large credit ₹8,00,000-₹40,00,000',
@@ -407,21 +435,19 @@ const availablePatterns: ExtendedFraudPattern[] = [
     name: 'Shared Device Transactions',
     description: 'Detect transactions from the same device by different users',
     risk_level: 'medium',
-    priority: 'Phase 2'
+    priority: 'Phase 2',
+    enabled: false,
+    disabled: true
   },
-  {
-    id: 'transaction_burst',
-    name: 'Transaction Burst',
-    description: 'Detect rapid successive transactions from same user',
-    risk_level: 'medium',
-    priority: 'Phase 2'
-  },
+
   {
     id: 'cross_location',
     name: 'Cross-Location Transactions',
     description: 'Detect transactions between users in different locations',
     risk_level: 'medium',
-    priority: 'Phase 2'
+    priority: 'Phase 2',
+    enabled: false,
+    disabled: true
   },
   
   // Phase 3 - Lower Priority Patterns
@@ -432,6 +458,7 @@ const availablePatterns: ExtendedFraudPattern[] = [
     risk_level: 'high',
     priority: 'Phase 3',
     enabled: false,
+    disabled: true,
     keyIndicators: [
       '5+ international transfers',
       'Amounts ₹40,000-₹4,00,000 each',
@@ -447,6 +474,7 @@ const availablePatterns: ExtendedFraudPattern[] = [
     risk_level: 'high',
     priority: 'Phase 3',
     enabled: false,
+    disabled: true,
     keyIndicators: [
       '3+ large transfers ₹8,00,000-₹40,00,000',
       'High-risk locations',
@@ -478,7 +506,7 @@ export default function AdminPage() {
 
   // Fraud patterns states
   const [selectedPatterns, setSelectedPatterns] = useState<string[]>(
-    availablePatterns.filter(p => p.enabled).map(p => p.id)
+    availablePatterns.filter(p => p.enabled && !p.disabled).map(p => p.id)
   )
   const [patternResults, setPatternResults] = useState<FraudResult[]>([])
   const [patternLoading, setPatternLoading] = useState(false)
@@ -1135,11 +1163,11 @@ export default function AdminPage() {
                 <p className="text-sm text-muted-foreground">
                   Immediate fraud detection using graph lookups and real-time analysis
                 </p> */}
-                {scenarios.filter(s => s.id.startsWith('RT')).map((scenario) => (
+                                  {scenarios.filter(s => s.id.startsWith('RT')).map((scenario) => (
                   <Collapsible key={scenario.id}>
-                    <div className="border rounded-lg">
+                    <div className={`border rounded-lg ${scenario.disabled ? 'opacity-50 bg-gray-50 dark:bg-gray-900' : ''}`}>
                       <CollapsibleTrigger
-                        onClick={() => toggleScenarioExpansion(scenario.id)}
+                        onClick={() => !scenario.disabled && toggleScenarioExpansion(scenario.id)}
                         isOpen={expandedScenarios.has(scenario.id)}
                       >
                         <div className="flex items-center justify-between w-full">
@@ -1147,32 +1175,40 @@ export default function AdminPage() {
                             <div onClick={(e) => e.stopPropagation()}>
                             <Switch
                               checked={scenario.enabled}
-                              onCheckedChange={() => toggleScenario(scenario.id)}
+                              onCheckedChange={() => !scenario.disabled && toggleScenario(scenario.id)}
+                              disabled={scenario.disabled}
                             />
                             </div>
                             <div className="text-left">
-                              <div className="font-medium">{scenario.name}</div>
-                              <div className="text-sm text-muted-foreground">{scenario.description}</div>
+                              <div className={`font-medium ${scenario.disabled ? 'text-gray-400' : ''}`}>
+                                {scenario.name}
+                                {scenario.disabled && <span className="ml-2 text-xs">(Coming Soon)</span>}
+                              </div>
+                              <div className={`text-sm ${scenario.disabled ? 'text-gray-400' : 'text-muted-foreground'}`}>
+                                {scenario.description}
+                              </div>
                             </div>
                           </div>
                           <div className="flex items-center space-x-2">
-                            <Badge className={getRiskLevelColor(scenario.riskLevel)}>
+                            <Badge className={`${getRiskLevelColor(scenario.riskLevel)} ${scenario.disabled ? 'opacity-50' : ''}`}>
                               {scenario.riskLevel}
                             </Badge>
                             <div
-                              className="inline-flex items-center justify-center h-9 rounded-md px-3 text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground cursor-pointer"
+                              className={`inline-flex items-center justify-center h-9 rounded-md px-3 text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground ${scenario.disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                               onClick={(e) => {
-                                e.stopPropagation()
-                                showScenarioDetails(scenario)
+                                if (!scenario.disabled) {
+                                  e.stopPropagation()
+                                  showScenarioDetails(scenario)
+                                }
                               }}
                               onKeyDown={(e) => {
-                                if (e.key === ' ' || e.key === 'Enter') {
+                                if (!scenario.disabled && (e.key === ' ' || e.key === 'Enter')) {
                                   e.preventDefault()
                                   e.stopPropagation()
                                   showScenarioDetails(scenario)
                                 }
                               }}
-                              tabIndex={0}
+                              tabIndex={scenario.disabled ? -1 : 0}
                               role="button"
                               aria-label="View scenario details"
                             >
@@ -1252,47 +1288,51 @@ export default function AdminPage() {
                    <span>Phase 1 - High Priority</span>
                  </h3>
                  <div className="grid gap-3 md:grid-cols-2">
-                   {patterns.filter(p => p.priority === 'Phase 1').map((pattern) => (
-                     <div
-                       key={pattern.id}
-                       className={`p-4 border rounded-lg transition-colors ${
-                         selectedPatterns.includes(pattern.id)
-                           ? 'border-primary bg-primary/5'
-                           : 'border-border'
-                       }`}
-                     >
-                       <div className="flex items-start justify-between mb-2">
-                         <div className="flex items-center space-x-2">
-                           {pattern.enabled !== undefined && (
-                             <Switch
-                               checked={pattern.enabled}
-                               onCheckedChange={() => togglePatternEnabled(pattern.id)}
-                             />
-                           )}
-                           <div 
-                             className="cursor-pointer flex-1"
-                             onClick={() => togglePattern(pattern.id)}
-                           >
-                             <h4 className="font-medium text-sm">{pattern.name}</h4>
-                           </div>
-                         </div>
-                         <Badge variant={getPatternRiskColor(pattern.risk_level) as any} className="text-xs">
-                           {pattern.risk_level}
-                         </Badge>
-                       </div>
-                       <p className="text-xs text-muted-foreground mb-2">{pattern.description}</p>
-                       {pattern.keyIndicators && (
-                         <div className="text-xs">
-                           <strong>Key Indicators:</strong>
-                           <ul className="list-disc list-inside mt-1 space-y-0.5">
-                             {pattern.keyIndicators.slice(0, 2).map((indicator, index) => (
-                               <li key={index} className="text-muted-foreground">{indicator}</li>
-                             ))}
-                           </ul>
-                         </div>
-                       )}
-                     </div>
-                   ))}
+                                     {patterns.filter(p => p.priority === 'Phase 1').map((pattern) => (
+                    <div
+                      key={pattern.id}
+                      className={`p-4 border rounded-lg transition-colors ${
+                        selectedPatterns.includes(pattern.id)
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border'
+                      } ${pattern.disabled ? 'opacity-50 bg-gray-50 dark:bg-gray-900' : ''}`}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          {pattern.enabled !== undefined && (
+                            <Switch
+                              checked={pattern.enabled}
+                              onCheckedChange={() => !pattern.disabled && togglePatternEnabled(pattern.id)}
+                              disabled={pattern.disabled}
+                            />
+                          )}
+                          <div 
+                            className={`flex-1 ${pattern.disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                            onClick={() => !pattern.disabled && togglePattern(pattern.id)}
+                          >
+                            <h4 className={`font-medium text-sm ${pattern.disabled ? 'text-gray-400' : ''}`}>
+                              {pattern.name}
+                              {pattern.disabled && <span className="ml-2 text-xs">(Coming Soon)</span>}
+                            </h4>
+                          </div>
+                        </div>
+                        <Badge variant={getPatternRiskColor(pattern.risk_level) as any} className={`text-xs ${pattern.disabled ? 'opacity-50' : ''}`}>
+                          {pattern.risk_level}
+                        </Badge>
+                      </div>
+                      <p className={`text-xs mb-2 ${pattern.disabled ? 'text-gray-400' : 'text-muted-foreground'}`}>{pattern.description}</p>
+                      {pattern.keyIndicators && (
+                        <div className="text-xs">
+                          <strong className={pattern.disabled ? 'text-gray-400' : ''}>Key Indicators:</strong>
+                          <ul className="list-disc list-inside mt-1 space-y-0.5">
+                            {pattern.keyIndicators.slice(0, 2).map((indicator, index) => (
+                              <li key={index} className={pattern.disabled ? 'text-gray-400' : 'text-muted-foreground'}>{indicator}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                  </div>
                </div>
 
@@ -1303,47 +1343,51 @@ export default function AdminPage() {
                    <span>Phase 2 - Medium Priority</span>
                  </h3>
                  <div className="grid gap-3 md:grid-cols-2">
-                   {patterns.filter(p => p.priority === 'Phase 2').map((pattern) => (
-                     <div
-                       key={pattern.id}
-                       className={`p-4 border rounded-lg transition-colors ${
-                         selectedPatterns.includes(pattern.id)
-                           ? 'border-primary bg-primary/5'
-                           : 'border-border'
-                       }`}
-                     >
-                       <div className="flex items-start justify-between mb-2">
-                         <div className="flex items-center space-x-2">
-                           {pattern.enabled !== undefined && (
-                             <Switch
-                               checked={pattern.enabled}
-                               onCheckedChange={() => togglePatternEnabled(pattern.id)}
-                             />
-                           )}
-                           <div 
-                             className="cursor-pointer flex-1"
-                             onClick={() => togglePattern(pattern.id)}
-                           >
-                             <h4 className="font-medium text-sm">{pattern.name}</h4>
-                           </div>
-                         </div>
-                         <Badge variant={getPatternRiskColor(pattern.risk_level) as any} className="text-xs">
-                           {pattern.risk_level}
-                         </Badge>
-                       </div>
-                       <p className="text-xs text-muted-foreground mb-2">{pattern.description}</p>
-                       {pattern.keyIndicators && (
-                         <div className="text-xs">
-                           <strong>Key Indicators:</strong>
-                           <ul className="list-disc list-inside mt-1 space-y-0.5">
-                             {pattern.keyIndicators.slice(0, 2).map((indicator, index) => (
-                               <li key={index} className="text-muted-foreground">{indicator}</li>
-                             ))}
-                           </ul>
-                         </div>
-                       )}
-                     </div>
-                   ))}
+                                     {patterns.filter(p => p.priority === 'Phase 2').map((pattern) => (
+                    <div
+                      key={pattern.id}
+                      className={`p-4 border rounded-lg transition-colors ${
+                        selectedPatterns.includes(pattern.id)
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border'
+                      } ${pattern.disabled ? 'opacity-50 bg-gray-50 dark:bg-gray-900' : ''}`}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          {pattern.enabled !== undefined && (
+                            <Switch
+                              checked={pattern.enabled}
+                              onCheckedChange={() => !pattern.disabled && togglePatternEnabled(pattern.id)}
+                              disabled={pattern.disabled}
+                            />
+                          )}
+                          <div 
+                            className={`flex-1 ${pattern.disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                            onClick={() => !pattern.disabled && togglePattern(pattern.id)}
+                          >
+                            <h4 className={`font-medium text-sm ${pattern.disabled ? 'text-gray-400' : ''}`}>
+                              {pattern.name}
+                              {pattern.disabled && <span className="ml-2 text-xs">(Coming Soon)</span>}
+                            </h4>
+                          </div>
+                        </div>
+                        <Badge variant={getPatternRiskColor(pattern.risk_level) as any} className={`text-xs ${pattern.disabled ? 'opacity-50' : ''}`}>
+                          {pattern.risk_level}
+                        </Badge>
+                      </div>
+                      <p className={`text-xs mb-2 ${pattern.disabled ? 'text-gray-400' : 'text-muted-foreground'}`}>{pattern.description}</p>
+                      {pattern.keyIndicators && (
+                        <div className="text-xs">
+                          <strong className={pattern.disabled ? 'text-gray-400' : ''}>Key Indicators:</strong>
+                          <ul className="list-disc list-inside mt-1 space-y-0.5">
+                            {pattern.keyIndicators.slice(0, 2).map((indicator, index) => (
+                              <li key={index} className={pattern.disabled ? 'text-gray-400' : 'text-muted-foreground'}>{indicator}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                  </div>
                </div>
 
@@ -1354,47 +1398,51 @@ export default function AdminPage() {
                    <span>Phase 3 - Lower Priority</span>
                  </h3>
                  <div className="grid gap-3 md:grid-cols-2">
-                   {patterns.filter(p => p.priority === 'Phase 3').map((pattern) => (
-                     <div
-                       key={pattern.id}
-                       className={`p-4 border rounded-lg transition-colors ${
-                         selectedPatterns.includes(pattern.id)
-                           ? 'border-primary bg-primary/5'
-                           : 'border-border'
-                       }`}
-                     >
-                       <div className="flex items-start justify-between mb-2">
-                         <div className="flex items-center space-x-2">
-                           {pattern.enabled !== undefined && (
-                             <Switch
-                               checked={pattern.enabled}
-                               onCheckedChange={() => togglePatternEnabled(pattern.id)}
-                             />
-                           )}
-                           <div 
-                             className="cursor-pointer flex-1"
-                             onClick={() => togglePattern(pattern.id)}
-                           >
-                             <h4 className="font-medium text-sm">{pattern.name}</h4>
-                           </div>
-                         </div>
-                         <Badge variant={getPatternRiskColor(pattern.risk_level) as any} className="text-xs">
-                           {pattern.risk_level}
-                         </Badge>
-                       </div>
-                       <p className="text-xs text-muted-foreground mb-2">{pattern.description}</p>
-                       {pattern.keyIndicators && (
-                         <div className="text-xs">
-                           <strong>Key Indicators:</strong>
-                           <ul className="list-disc list-inside mt-1 space-y-0.5">
-                             {pattern.keyIndicators.slice(0, 2).map((indicator, index) => (
-                               <li key={index} className="text-muted-foreground">{indicator}</li>
-                             ))}
-                           </ul>
-                         </div>
-                       )}
-                     </div>
-                   ))}
+                                     {patterns.filter(p => p.priority === 'Phase 3').map((pattern) => (
+                    <div
+                      key={pattern.id}
+                      className={`p-4 border rounded-lg transition-colors ${
+                        selectedPatterns.includes(pattern.id)
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border'
+                      } ${pattern.disabled ? 'opacity-50 bg-gray-50 dark:bg-gray-900' : ''}`}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          {pattern.enabled !== undefined && (
+                            <Switch
+                              checked={pattern.enabled}
+                              onCheckedChange={() => !pattern.disabled && togglePatternEnabled(pattern.id)}
+                              disabled={pattern.disabled}
+                            />
+                          )}
+                          <div 
+                            className={`flex-1 ${pattern.disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                            onClick={() => !pattern.disabled && togglePattern(pattern.id)}
+                          >
+                            <h4 className={`font-medium text-sm ${pattern.disabled ? 'text-gray-400' : ''}`}>
+                              {pattern.name}
+                              {pattern.disabled && <span className="ml-2 text-xs">(Coming Soon)</span>}
+                            </h4>
+                          </div>
+                        </div>
+                        <Badge variant={getPatternRiskColor(pattern.risk_level) as any} className={`text-xs ${pattern.disabled ? 'opacity-50' : ''}`}>
+                          {pattern.risk_level}
+                        </Badge>
+                      </div>
+                      <p className={`text-xs mb-2 ${pattern.disabled ? 'text-gray-400' : 'text-muted-foreground'}`}>{pattern.description}</p>
+                      {pattern.keyIndicators && (
+                        <div className="text-xs">
+                          <strong className={pattern.disabled ? 'text-gray-400' : ''}>Key Indicators:</strong>
+                          <ul className="list-disc list-inside mt-1 space-y-0.5">
+                            {pattern.keyIndicators.slice(0, 2).map((indicator, index) => (
+                              <li key={index} className={pattern.disabled ? 'text-gray-400' : 'text-muted-foreground'}>{indicator}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                  </div>
                </div>
             </CardContent>

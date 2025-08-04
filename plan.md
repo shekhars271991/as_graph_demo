@@ -35,18 +35,41 @@ This document outlines a hybrid fraud detection approach leveraging Aerospike Gr
 
 ## 🧩 Scenario Categorization
 
+### Real-time Detection (RT) Scenarios
+| Scenario ID | Description                          | Graph Use              | Detection Mode | Priority | Notes                              |
+| ----------- | ------------------------------------ | ---------------------- | -------------- | -------- | ---------------------------------- |
+| RT1         | Transaction to flagged account       | 1-hop lookup           | Realtime       | Phase 1  | Immediate threat detection         |
+| RT2         | Repeated small ring interactions     | 2-hop neighborhood     | Realtime       | Phase 1  | Identify mule rings (Coming Soon) |
+| RT3         | Supernode detection (high-degree)    | Centrality check       | Realtime       | Phase 1  | Alert on highly connected accounts |
+| RT4         | High-risk batch score                | Vertex property lookup | Realtime       | Phase 1  | Use batch score inline (Coming Soon) |
+| RT5         | Transaction burst                    | Time-based clustering  | Realtime       | Phase 1  | Rapid successive transactions      |
+
+### Batch Detection (BT) Scenarios
+
+#### Phase 1 - High Priority
 | Scenario ID | Description                          | Graph Use              | Detection Mode | Notes                              |
 | ----------- | ------------------------------------ | ---------------------- | -------------- | ---------------------------------- |
-| RT1         | Transaction to flagged account       | 1-hop lookup           | Realtime       | Immediate threat detection         |
-| RT2         | Repeated small ring interactions     | 2-hop neighborhood     | Realtime       | Identify mule rings                |
-| RT3         | Supernode detection (high-degree)    | Centrality check       | Realtime       | Alert on highly connected accounts |
-| RT4         | High-risk batch score                | Vertex property lookup | Realtime       | Use batch score inline             |
 | BT1         | Multiple small credits → large debit | Time window path sum   | Batch          | Pattern A (structuring)            |
-| BT2         | 1 large credit → 4 equal debits      | Fan-out structure      | Batch          | Pattern B                          |
-| BT3         | Dormant account → sudden activity    | Temporal + path        | Batch          | Pattern F                          |
-| BT4         | 3-hop transfer in short time         | Timed path             | Batch          | Rapid hops between accounts        |
-| BT5         | Circular transactions                | Cycle detection        | Batch          | Detect fraud rings                 |
-| BT6         | Region-based risky connections       | Geo-tagged edges       | Batch          | Pattern H (India-specific)         |
+| BT2         | Large credit → structured equal debits | Fan-out structure    | Batch          | Pattern B (money distribution)     |
+| BT3         | High-frequency mule account transfers | Velocity analysis     | Batch          | Pattern D (rapid money movement)   |
+| BT4         | Circular transaction flow            | Cycle detection        | Batch          | Detect circular money flows        |
+| BT5         | High amount transactions             | Amount threshold       | Batch          | Unusually high transaction amounts |
+| BT6         | New user high activity               | User behavior analysis | Batch          | New users with high activity       |
+
+#### Phase 2 - Medium Priority  
+| Scenario ID | Description                          | Graph Use              | Detection Mode | Notes                              |
+| ----------- | ------------------------------------ | ---------------------- | -------------- | ---------------------------------- |
+| BT7         | Multiple large ATM withdrawals       | Transaction pattern    | Batch          | Pattern C (cash extraction)        |
+| BT8         | Salary-like deposits → suspicious transfers | Temporal pattern   | Batch          | Pattern E (account takeover)       |
+| BT9         | Dormant account sudden activity      | Temporal + path        | Batch          | Pattern F (account compromise)     |
+| BT10        | Shared device transactions           | Device fingerprinting  | Batch          | Same device, different users       |
+| BT11        | Cross-location transactions          | Geo-analysis           | Batch          | Transactions across locations      |
+
+#### Phase 3 - Lower Priority
+| Scenario ID | Description                          | Graph Use              | Detection Mode | Notes                              |
+| ----------- | ------------------------------------ | ---------------------- | -------------- | ---------------------------------- |
+| BT12        | International high-risk transfers    | Geo-tagged edges       | Batch          | Pattern G (cross-border)           |
+| BT13        | Region-specific fraud (Indian)       | Location-based analysis| Batch          | Pattern H (India-specific regions) |
 
 ---
 
@@ -150,11 +173,25 @@ g.V().hasLabel('account')
 
 ## ✅ Summary
 
-| Type     | Scenario | Graph Query             | Action           |
-| -------- | -------- | ----------------------- | ---------------- |
-| Realtime | RT1      | 1-hop lookup            | Flag transaction |
-| Realtime | RT2      | 2-hop cycle             | Warn user        |
-| Batch    | BT1      | Path + timestamp filter | Score account    |
-| Batch    | BT5      | Cycle detection         | Label fraud ring |
+### Real-time Scenarios (Active)
+| Type     | Scenario | Graph Query             | Action           | Status    |
+| -------- | -------- | ----------------------- | ---------------- | --------- |
+| Realtime | RT1      | 1-hop lookup            | Flag transaction | ✅ Active |
+| Realtime | RT3      | Centrality check        | Alert on hubs    | ✅ Active |
+| Realtime | RT5      | Time-based clustering   | Detect bursts    | ✅ Active |
+| Realtime | RT2      | 2-hop neighborhood      | Warn user        | 🚧 Coming Soon |
+| Realtime | RT4      | Vertex property lookup  | Risk assessment  | 🚧 Coming Soon |
 
-This plan helps demonstrate how graph DB enables both **responsive fraud detection** and **deep pattern mining**, critical for modern financial systems.
+### Batch Scenarios (by Priority)
+| Priority | Scenario | Graph Query             | Action           | Status    |
+| -------- | -------- | ----------------------- | ---------------- | --------- |
+| Phase 1  | BT1      | Time window path sum    | Score account    | ✅ Ready |
+| Phase 1  | BT2      | Fan-out structure       | Detect distribution | 📋 Planned |
+| Phase 1  | BT3      | Velocity analysis       | Flag mule activity | ✅ Ready |
+| Phase 1  | BT4      | Cycle detection         | Label fraud ring | 📋 Planned |
+| Phase 1  | BT5      | Amount threshold        | Flag high amounts | 📋 Planned |
+| Phase 1  | BT6      | User behavior analysis  | Monitor new users | ✅ Ready |
+| Phase 2  | BT7-BT11 | Various patterns        | Enhanced detection | 📋 Planned |
+| Phase 3  | BT12-BT13| Location-based analysis | Regional patterns | 📋 Planned |
+
+This comprehensive plan demonstrates how graph DB enables both **responsive real-time fraud detection** and **deep batch pattern mining**, providing a complete fraud detection ecosystem for modern financial systems.
