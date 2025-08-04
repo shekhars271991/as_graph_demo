@@ -63,6 +63,9 @@ def setup_logging():
     normal_handler.setFormatter(normal_formatter)
     logger.addHandler(normal_handler)
     
+    # Prevent propagation to parent logger
+    logger.propagate = False
+    
     # Statistics logger
     stats_logger = logging.getLogger('fraud_detection.stats')
     stats_logger.setLevel(logging.INFO)
@@ -75,6 +78,7 @@ def setup_logging():
     )
     stats_handler.setFormatter(stats_formatter)
     stats_logger.addHandler(stats_handler)
+    stats_logger.propagate = False  # Prevent propagation to parent logger
     
     return logger, stats_logger
 

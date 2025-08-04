@@ -32,7 +32,7 @@ def parse_arguments():
     parser.add_argument('-d', '--delete', action='store_true', 
                        help='Delete all data from the graph database on startup')
     parser.add_argument('-l', '--load-users', action='store_true',
-                       help='Load only user data (no transactions) from users.json on startup')
+                       help='Load data from users.json on startup (same as /seed-data endpoint)')
     parser.add_argument('--host', default='0.0.0.0', help='Host to bind to (default: 0.0.0.0)')
     parser.add_argument('--port', type=int, default=4000, help='Port to bind to (default: 4000)')
     return parser.parse_args()
@@ -63,15 +63,15 @@ async def lifespan(app: FastAPI):
             logger.error(f"Error during data deletion: {e}")
     
     if args and args.load_users:
-        logger.info("📂 Loading user data from users.json...")
+        logger.info("📂 Loading data from users.json...")
         try:
-            result = await graph_service.load_users_only()
+            result = await graph_service.seed_sample_data()
             if "error" in result:
-                logger.error(f"Failed to load user data: {result['error']}")
+                logger.error(f"Failed to load data: {result['error']}")
             else:
-                logger.info(f"✅ User data loaded successfully: {result['users']} users, {result['accounts']} accounts")
+                logger.info(f"✅ Data loaded successfully: {result['users']} users, {result['accounts']} accounts, {result['devices']} devices, {result['transactions']} transactions")
         except Exception as e:
-            logger.error(f"Error during user data loading: {e}")
+            logger.error(f"Error during data loading: {e}")
     
     # Only automatically load users.json data if AUTO_LOAD_DATA is set to true and no flags are specified
     auto_load_data = os.getenv('AUTO_LOAD_DATA', 'false').lower() == 'true'
@@ -84,7 +84,7 @@ async def lifespan(app: FastAPI):
             if "error" in result:
                 logger.error(f"Failed to load data: {result['error']}")
             else:
-                logger.info(f"✅ Data loaded successfully: {result['users']} users, {result['accounts']} accounts, {result['transactions']} transactions")
+                logger.info(f"✅ Data loaded successfully: {result['users']} users, {result['accounts']} accounts, {result['devices']} devices, {result['transactions']} transactions")
         except Exception as e:
             logger.error(f"Error during data loading: {e}")
     elif not args or (not args.delete and not args.load_users):
@@ -136,6 +136,7 @@ async def seed_data():
             "message": "Data loaded successfully from users.json",
             "users_created": result["users"],
             "accounts_created": result["accounts"],
+            "devices_created": result["devices"],
             "transactions_created": result["transactions"]
         }
     except Exception as e:

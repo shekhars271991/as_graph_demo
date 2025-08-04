@@ -13,7 +13,7 @@ from gremlin_python.process.graph_traversal import __
 from gremlin_python.process.traversal import P
 
 from models.schemas import (
-    User, Account, Transaction, UserSummary, TransactionDetail,
+    User, Account, Device, Transaction, UserSummary, TransactionDetail,
     DashboardStats, SearchResult, FraudRiskLevel, TransactionStatus
 )
 
@@ -110,7 +110,7 @@ class GraphService:
             
             if not users_file_path:
                 logger.error(f"Users data file not found. Tried paths: {possible_paths}")
-                return {"users": 0, "accounts": 0, "transactions": 0, "error": "Users data file not found"}
+                return {"users": 0, "accounts": 0, "devices": 0, "transactions": 0, "error": "Users data file not found"}
             
             logger.info(f"Loading users from: {users_file_path}")
             
@@ -129,12 +129,13 @@ class GraphService:
                 
         except Exception as e:
             logger.error(f"Error loading users data: {e}")
-            return {"users": 0, "accounts": 0, "transactions": 0, "error": str(e)}
+            return {"users": 0, "accounts": 0, "devices": 0, "transactions": 0, "error": str(e)}
 
     async def _load_users_to_graph_async(self) -> Dict[str, int]:
         """Load users data from JSON into the real graph database asynchronously"""
         users_created = 0
         accounts_created = 0
+        devices_created = 0
         transactions_created = 0
         
         try:
@@ -173,6 +174,24 @@ class GraphService:
                             await loop.run_in_executor(None, create_ownership)
                         except Exception as e:
                             logger.error(f"Error creating account {account_data['id']}: {e}")
+                            continue
+                    
+                    # Create devices for this user
+                    for device_data in user_data.get('devices', []):
+                        try:
+                            def create_device():
+                                return self.client.add_v("device").property("device_id", device_data['id']).property("type", device_data['type']).property("os", device_data['os']).property("browser", device_data['browser']).property("fingerprint", device_data['fingerprint']).property("first_seen", device_data['first_seen']).property("last_login", device_data['last_login']).property("login_count", device_data['login_count']).next()
+                            
+                            device_vertex = await loop.run_in_executor(None, create_device)
+                            devices_created += 1
+                            
+                            # Link user to device
+                            def create_device_usage():
+                                return self.client.add_e("USES_DEVICE").from_(user_vertex).to(device_vertex).property("first_login", device_data['first_seen']).property("last_login", device_data['last_login']).property("login_count", device_data['login_count']).iterate()
+                            
+                            await loop.run_in_executor(None, create_device_usage)
+                        except Exception as e:
+                            logger.error(f"Error creating device {device_data['id']}: {e}")
                             continue
                     
                     # Create some sample transactions between accounts
@@ -224,10 +243,11 @@ class GraphService:
                     logger.error(f"Error creating user {user_data['id']}: {e}")
                     continue
             
-            logger.info(f"Graph data loaded: {users_created} users, {accounts_created} accounts, {transactions_created} transactions")
+            logger.info(f"Graph data loaded: {users_created} users, {accounts_created} accounts, {devices_created} devices, {transactions_created} transactions")
             return {
                 "users": users_created,
                 "accounts": accounts_created,
+                "devices": devices_created,
                 "transactions": transactions_created
             }
             
@@ -236,6 +256,7 @@ class GraphService:
             return {
                 "users": users_created,
                 "accounts": accounts_created,
+                "devices": devices_created,
                 "transactions": transactions_created,
                 "error": str(e)
             }
@@ -278,6 +299,29 @@ class GraphService:
                         account_type=acc_props.get('type', 'checking'),
                         balance=acc_props.get('balance', 0.0),
                         created_date=acc_props.get('created_date', '')
+                    ))
+
+                # Get user's devices
+                device_vertices = self.client.V(user_vertex).out("USES_DEVICE").to_list()
+                devices = []
+                for device_vertex in device_vertices:
+                    device_props = {}
+                    device_prop_map = self.client.V(device_vertex).value_map().next()
+                    for key, value in device_prop_map.items():
+                        if isinstance(value, list) and len(value) > 0:
+                            device_props[key] = value[0]
+                        else:
+                            device_props[key] = value
+                    
+                    devices.append(Device(
+                        id=device_props.get('device_id', ''),
+                        type=device_props.get('type', ''),
+                        os=device_props.get('os', ''),
+                        browser=device_props.get('browser', ''),
+                        fingerprint=device_props.get('fingerprint', ''),
+                        first_seen=device_props.get('first_seen', ''),
+                        last_login=device_props.get('last_login', ''),
+                        login_count=device_props.get('login_count', 0)
                     ))
                 
                 # Get transaction summary
@@ -329,6 +373,7 @@ class GraphService:
                         signup_date=user_props.get('signup_date', '')
                     ),
                     accounts=accounts,
+                    devices=devices,
                     recent_transactions=recent_transactions,
                     total_transactions=total_transactions,
                     total_amount_sent=total_amount_sent,
@@ -350,6 +395,19 @@ class GraphService:
                         account_type=acc_data['type'],
                         balance=acc_data['balance'],
                         created_date=acc_data['created_date']
+                    ))
+                
+                devices = []
+                for device_data in user_data.get('devices', []):
+                    devices.append(Device(
+                        id=device_data['id'],
+                        type=device_data['type'],
+                        os=device_data['os'],
+                        browser=device_data['browser'],
+                        fingerprint=device_data['fingerprint'],
+                        first_seen=device_data['first_seen'],
+                        last_login=device_data['last_login'],
+                        login_count=device_data['login_count']
                     ))
                 
                 # Calculate fraud risk level based on risk score
@@ -374,6 +432,7 @@ class GraphService:
                         signup_date=user_data['signup_date']
                     ),
                     accounts=accounts,
+                    devices=devices,
                     recent_transactions=[],  # No transactions in mock mode
                     total_transactions=0,
                     total_amount_sent=0.0,
@@ -1075,126 +1134,6 @@ class GraphService:
             logger.error(f"Error deleting all data: {e}")
             return {"error": str(e)}
 
-    async def load_users_only(self) -> Dict[str, Any]:
-        """Load only user and account data (no transactions) from users.json"""
-        try:
-            # Load users data from JSON file
-            possible_paths = [
-                os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'users.json'),
-                os.path.join(os.path.dirname(__file__), '..', 'data', 'users.json'),
-                'data/users.json',
-                '../data/users.json',
-                '../../data/users.json'
-            ]
-            
-            users_file_path = None
-            for path in possible_paths:
-                if os.path.exists(path):
-                    users_file_path = path
-                    break
-            
-            if not users_file_path:
-                return {"error": "users.json file not found"}
-            
-            logger.info(f"Loading users from: {users_file_path}")
-            
-            with open(users_file_path, 'r') as f:
-                data = json.load(f)
-            
-            users = data.get('users', [])
-            total_users = len(users)
-            total_accounts = 0
-            
-            if self.client:
-                # Real graph mode - use thread pool to avoid event loop conflicts
-                logger.info("Loading users and accounts into graph database...")
-                
-                import asyncio
-                loop = asyncio.get_event_loop()
-                
-                # Run all Gremlin operations in a thread pool
-                for user_data in users:
-                    try:
-                        # Create user vertex
-                        def create_user():
-                            return self.client.addV("user").property(
-                                "user_id", user_data['id']
-                            ).property(
-                                "name", user_data['name']
-                            ).property(
-                                "email", user_data['email']
-                            ).property(
-                                "phone", user_data.get('phone', '')
-                            ).property(
-                                "age", user_data['age']
-                            ).property(
-                                "location", user_data['location']
-                            ).property(
-                                "occupation", user_data.get('occupation', 'Unknown')
-                            ).property(
-                                "risk_score", user_data.get('risk_score', 0.0)
-                            ).property(
-                                "signup_date", user_data['signup_date']
-                            ).next()
-                        
-                        user_vertex = await loop.run_in_executor(None, create_user)
-                        
-                        # Create accounts for this user
-                        for account_data in user_data.get('accounts', []):
-                            def create_account():
-                                return self.client.addV("account").property(
-                                    "account_id", account_data['id']
-                                ).property(
-                                    "type", account_data['type']
-                                ).property(
-                                    "balance", account_data['balance']
-                                ).property(
-                                    "status", "active"
-                                ).property(
-                                    "bank_name", "Demo Bank"
-                                ).property(
-                                    "created_date", account_data['created_date']
-                                ).property(
-                                    "fraudFlag", account_data.get('fraudFlag', False)
-                                ).next()
-                            
-                            account_vertex = await loop.run_in_executor(None, create_account)
-                            
-                            # Create ownership edge
-                            def create_edge():
-                                return self.client.addE("OWNS").from_(user_vertex).to(account_vertex).next()
-                            
-                            await loop.run_in_executor(None, create_edge)
-                            total_accounts += 1
-                            
-                    except Exception as e:
-                        logger.error(f"Error creating user {user_data.get('id', 'unknown')}: {e}")
-                        continue
-                
-                logger.info(f"✅ Loaded {total_users} users and {total_accounts} accounts into graph database")
-                
-                return {
-                    "users": total_users,
-                    "accounts": total_accounts,
-                    "transactions": 0
-                }
-            else:
-                # Mock mode
-                logger.info("Mock mode: Loading users and accounts into memory")
-                self.users_data = users
-                total_accounts = sum(len(user.get('accounts', [])) for user in users)
-                
-                logger.info(f"✅ Loaded {total_users} users and {total_accounts} accounts into memory")
-                
-                return {
-                    "users": total_users,
-                    "accounts": total_accounts,
-                    "transactions": 0
-                }
-                
-        except Exception as e:
-            logger.error(f"Error loading users only: {e}")
-            return {"error": str(e)}
 
     async def flag_account(self, account_id: str, reason: str) -> bool:
         """Flag an account as fraudulent"""

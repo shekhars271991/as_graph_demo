@@ -57,11 +57,13 @@ def setup_logging():
     graph_logger.setLevel(logging.DEBUG)
     graph_logger.addHandler(graph_logs_handler)
     graph_logger.addHandler(console_handler)
+    graph_logger.propagate = False  # Prevent propagation to parent logger
     
     api_logger = logging.getLogger('fraud_detection.api')
     api_logger.setLevel(logging.INFO)
     api_logger.addHandler(all_logs_handler)
     api_logger.addHandler(console_handler)
+    api_logger.propagate = False  # Prevent propagation to parent logger
     
     return logger
 

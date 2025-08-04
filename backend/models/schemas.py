@@ -40,6 +40,16 @@ class Account(BaseModel):
     created_date: datetime
     is_active: bool = True
 
+class Device(BaseModel):
+    id: str
+    type: str
+    os: str
+    browser: str
+    fingerprint: str
+    first_seen: str
+    last_login: str
+    login_count: int
+
 class Transaction(BaseModel):
     id: str
     sender_id: str
@@ -63,6 +73,7 @@ class FraudCheckResult(BaseModel):
 class UserSummary(BaseModel):
     user: User
     accounts: List[Account]
+    devices: List[Device]
     recent_transactions: List[Transaction]
     total_transactions: int
     total_amount_sent: float

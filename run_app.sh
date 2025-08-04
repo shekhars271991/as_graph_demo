@@ -16,11 +16,11 @@ show_usage() {
     echo ""
     echo "Options:"
     echo "  -h, --help              Show this help message"
-    echo "  -l, --load-users        Delete all data and load users from users.json"
+    echo "  -l, --load-users        Delete all data and load users, accounts, devices from users.json"
     echo ""
     echo "Examples:"
     echo "  $0                      # Start applications normally"
-    echo "  $0 -l                   # Delete all data and load users from users.json"
+    echo "  $0 -l                   # Delete all data and load users, accounts, devices from users.json"
     echo ""
 }
 
@@ -237,7 +237,7 @@ echo "📚 API Documentation: http://localhost:4000/docs"
 echo ""
 
 if [ "$LOAD_USERS" = true ]; then
-    echo "🗑️  All data was deleted and users from users.json were loaded"
+    echo "🗑️  All data was deleted and users, accounts, devices from users.json were loaded"
 fi
 
 echo ""

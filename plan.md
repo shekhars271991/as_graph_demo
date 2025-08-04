@@ -39,11 +39,11 @@ This document outlines a hybrid fraud detection approach leveraging Aerospike Gr
 | Scenario ID | Description                          | Graph Use              | Detection Mode | Priority | Notes                              |
 | ----------- | ------------------------------------ | ---------------------- | -------------- | -------- | ---------------------------------- |
 | RT1         | Transaction to flagged account       | 1-hop lookup           | Realtime       | Phase 1  | Immediate threat detection         |
-| RT2         | Repeated small ring interactions     | 2-hop neighborhood     | Realtime       | Phase 1  | Identify mule rings (Coming Soon) |
+| RT2         |Flagged device     | 2-hop neighborhood     | Realtime       | Phase 1  | Identify mule rings |
 | RT3         | Supernode detection (high-degree)    | Centrality check       | Realtime       | Phase 1  | Alert on highly connected accounts |
 | RT4         | High-risk batch score                | Vertex property lookup | Realtime       | Phase 1  | Use batch score inline (Coming Soon) |
 | RT5         | Transaction burst                    | Time-based clustering  | Realtime       | Phase 1  | Rapid successive transactions      |
-
+| RT2         | Repeated small ring interactions     | 2-hop neighborhood     | Realtime       | Phase 1  | Identify mule rings (Coming Soon) |
 ### Batch Detection (BT) Scenarios
 
 #### Phase 1 - High Priority

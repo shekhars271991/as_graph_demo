@@ -170,6 +170,7 @@ async def seed_data():
             "message": "Data loaded successfully from users.json",
             "users_created": result["users"],
             "accounts_created": result["accounts"],
+            "devices_created": result["devices"],
             "transactions_created": result["transactions"]
         }
     except Exception as e:

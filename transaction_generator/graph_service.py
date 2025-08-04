@@ -114,7 +114,7 @@ class GraphService:
             
             if not users_file_path:
                 logger.error(f"Users data file not found. Tried paths: {possible_paths}")
-                return {"users": 0, "accounts": 0, "transactions": 0, "error": "Users data file not found"}
+                return {"users": 0, "accounts": 0, "devices": 0, "transactions": 0, "error": "Users data file not found"}
             
             logger.info(f"Loading users from: {users_file_path}")
             
@@ -129,16 +129,17 @@ class GraphService:
                 return await self._load_users_to_graph_async()
             else:
                 # Store data in memory for mock mode
-                return {"users": len(self.users_data), "accounts": 0, "transactions": 0, "message": "Data loaded in mock mode"}
+                return {"users": len(self.users_data), "accounts": 0, "devices": 0, "transactions": 0, "message": "Data loaded in mock mode"}
                 
         except Exception as e:
             logger.error(f"Error loading users data: {e}")
-            return {"users": 0, "accounts": 0, "transactions": 0, "error": str(e)}
+            return {"users": 0, "accounts": 0, "devices": 0, "transactions": 0, "error": str(e)}
 
     async def _load_users_to_graph_async(self) -> Dict[str, int]:
         """Load users data from JSON into the real graph database asynchronously"""
         users_created = 0
         accounts_created = 0
+        devices_created = 0
         transactions_created = 0
         
         try:
@@ -179,6 +180,24 @@ class GraphService:
                             logger.error(f"Error creating account {account_data['id']}: {e}")
                             continue
                     
+                    # Create devices for this user
+                    for device_data in user_data.get('devices', []):
+                        try:
+                            def create_device():
+                                return self.client.add_v("Device").property("deviceId", device_data['id']).property("type", device_data['type']).property("os", device_data['os']).property("browser", device_data['browser']).property("fingerprint", device_data['fingerprint']).property("first_seen", device_data['first_seen']).property("last_login", device_data['last_login']).property("login_count", device_data['login_count']).next()
+                            
+                            device_vertex = await loop.run_in_executor(None, create_device)
+                            devices_created += 1
+                            
+                            # Link user to device
+                            def create_device_usage():
+                                return self.client.add_e("uses").from_(user_vertex).to(device_vertex).property("first_login", device_data['first_seen']).property("last_login", device_data['last_login']).property("login_count", device_data['login_count']).iterate()
+                            
+                            await loop.run_in_executor(None, create_device_usage)
+                        except Exception as e:
+                            logger.error(f"Error creating device {device_data['id']}: {e}")
+                            continue
+                    
                     # Create some sample transactions between accounts
                     try:
                         def get_user_accounts():
@@ -216,10 +235,11 @@ class GraphService:
                     logger.error(f"Error creating user {user_data['id']}: {e}")
                     continue
             
-            logger.info(f"Graph data loaded: {users_created} users, {accounts_created} accounts, {transactions_created} transactions")
+            logger.info(f"Graph data loaded: {users_created} users, {accounts_created} accounts, {devices_created} devices, {transactions_created} transactions")
             return {
                 "users": users_created,
                 "accounts": accounts_created,
+                "devices": devices_created,
                 "transactions": transactions_created
             }
             
@@ -228,6 +248,7 @@ class GraphService:
             return {
                 "users": users_created,
                 "accounts": accounts_created,
+                "devices": devices_created,
                 "transactions": transactions_created,
                 "error": str(e)
             }
