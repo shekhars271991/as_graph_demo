@@ -115,12 +115,55 @@ export default function UserDetailPage() {
   const [connectionsLoading, setConnectionsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('overview')
+  const [detailedTransactions, setDetailedTransactions] = useState<any[]>([])
+  const [transactionsLoading, setTransactionsLoading] = useState(false)
 
   useEffect(() => {
     if (userId) {
       loadUserDetails()
     }
   }, [userId])
+
+  // Fetch detailed transaction data when user details are loaded
+  useEffect(() => {
+    const fetchDetailedTransactions = async () => {
+      if (!userDetails?.recent_transactions || userDetails.recent_transactions.length === 0) return
+      
+      setTransactionsLoading(true)
+      try {
+        const detailedData = await Promise.all(
+          userDetails.recent_transactions.map(async (transaction) => {
+            try {
+              const response = await fetch(`http://localhost:4000/transaction/${transaction.id}`)
+              if (response.ok) {
+                const detail = await response.json()
+                return {
+                  ...transaction,
+                  source_account: detail.source_account,
+                  destination_account: detail.destination_account,
+                  fraud_results: detail.fraud_results || []
+                }
+              }
+              return transaction // fallback to original if detail fetch fails
+            } catch (error) {
+              console.error(`Error fetching details for transaction ${transaction.id}:`, error)
+              return transaction // fallback to original
+            }
+          })
+        )
+        setDetailedTransactions(detailedData)
+      } catch (error) {
+        console.error('Error fetching detailed transactions:', error)
+        setDetailedTransactions(userDetails.recent_transactions) // fallback
+      } finally {
+        setTransactionsLoading(false)
+      }
+    }
+    
+    if (userDetails && !transactionsLoading) {
+      fetchDetailedTransactions()
+    }
+  }, [userDetails])
 
   const loadUserDetails = async () => {
     setLoading(true)
@@ -226,6 +269,26 @@ export default function UserDetailPage() {
     if (isSender && !isReceiver) return 'sent'
     if (isReceiver && !isSender) return 'received'
     return 'internal' // both sender and receiver are user's accounts
+  }
+
+  // Helper function to get sender and receiver names from detailed transaction data
+  const getTransactionParties = (transaction: any) => {
+    if (transaction.source_account && transaction.destination_account) {
+      return {
+        senderName: transaction.source_account.user_name,
+        receiverName: transaction.destination_account.user_name,
+        senderAccountId: transaction.source_account.id,
+        receiverAccountId: transaction.destination_account.id
+      }
+    }
+    
+    // Fallback to account IDs if detailed data not available
+    return {
+      senderName: 'Loading...',
+      receiverName: 'Loading...',
+      senderAccountId: transaction.sender_id,
+      receiverAccountId: transaction.receiver_id
+    }
   }
 
   if (loading) {
@@ -526,13 +589,19 @@ export default function UserDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {userDetails.recent_transactions.length > 0 ? (
+              {transactionsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Loading transactions...</span>
+                  </div>
+                </div>
+              ) : detailedTransactions.length > 0 ? (
                 <div className="space-y-4">
-                  {userDetails.recent_transactions.map((transaction) => {
+                  {detailedTransactions.map((transaction) => {
                     const direction = getTransactionDirection(transaction)
                     const displayAmount = direction === 'sent' ? -Math.abs(transaction.amount) : Math.abs(transaction.amount)
-                    const senderName = getUserNameByAccountId(transaction.sender_id)
-                    const receiverName = getUserNameByAccountId(transaction.receiver_id)
+                    const { senderName, receiverName } = getTransactionParties(transaction)
                     const isFraud = transaction.fraud_score > 0
                     
                     return (
@@ -569,7 +638,7 @@ export default function UserDetailPage() {
                           <div className="flex-1">
                             <p className="text-sm font-medium text-gray-600">From</p>
                             <p className="font-semibold">{senderName}</p>
-                            <p className="text-xs text-gray-500 font-mono">{transaction.sender_id}</p>
+                            <p className="text-xs text-gray-500 font-mono">{getTransactionParties(transaction).senderAccountId}</p>
                           </div>
                           <div className="flex items-center">
                             <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
@@ -579,7 +648,7 @@ export default function UserDetailPage() {
                           <div className="flex-1 text-right">
                             <p className="text-sm font-medium text-gray-600">To</p>
                             <p className="font-semibold">{receiverName}</p>
-                            <p className="text-xs text-gray-500 font-mono">{transaction.receiver_id}</p>
+                            <p className="text-xs text-gray-500 font-mono">{getTransactionParties(transaction).receiverAccountId}</p>
                           </div>
                         </div>
 
