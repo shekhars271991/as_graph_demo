@@ -13,15 +13,16 @@ class FraudDetectionService:
             "circular_flow": FraudPattern(
                 id="circular_flow",
                 name="Circular Transaction Flow",
-                description="Detect circular money flows between users",
+                description="Detect circular money flows between accounts via transactions",
                 query="""
-                g.V().hasLabel('transaction')
+                g.V().hasLabel('account')
                 .as('start')
-                .outE('sent').inV().hasLabel('user')
-                .outE('sent').inV().hasLabel('transaction')
-                .outE('received_by').inV().hasLabel('user')
-                .outE('sent').inV().hasLabel('transaction')
-                .outE('received_by').inV().hasLabel('user')
+                .out('TRANSFERS_TO').hasLabel('transaction')
+                .out('TRANSFERS_FROM').hasLabel('account')
+                .out('TRANSFERS_TO').hasLabel('transaction')
+                .out('TRANSFERS_FROM').hasLabel('account')
+                .out('TRANSFERS_TO').hasLabel('transaction')
+                .out('TRANSFERS_FROM').hasLabel('account')
                 .where(eq('start'))
                 .path()
                 .by(valueMap())
@@ -47,14 +48,13 @@ class FraudDetectionService:
             "transaction_burst": FraudPattern(
                 id="transaction_burst",
                 name="Transaction Burst",
-                description="Detect rapid successive transactions from same user",
+                description="Detect rapid successive transactions from same account",
                 query="""
-                g.V().hasLabel('user')
-                .outE('sent')
-                .inV()
+                g.V().hasLabel('account')
+                .out('TRANSFERS_TO')
                 .hasLabel('transaction')
                 .order().by('timestamp')
-                .group().by('sender_id')
+                .group().by(in_('TRANSFERS_TO').values('account_id'))
                 .unfold()
                 .filter(select(values).count(local).is(P.gte(5)))
                 .select(values)
@@ -77,13 +77,15 @@ class FraudDetectionService:
             "cross_location": FraudPattern(
                 id="cross_location",
                 name="Cross-Location Transactions",
-                description="Detect transactions between users in different locations",
+                description="Detect transactions between accounts in different locations",
                 query="""
                 g.V().hasLabel('transaction')
                 .as('tx')
-                .outE('sent').inV().hasLabel('user').as('sender')
+                .in_('TRANSFERS_TO').hasLabel('account')
+                .in_('OWNS').hasLabel('user').as('sender')
                 .select('tx')
-                .outE('received_by').inV().hasLabel('user').as('receiver')
+                .out('TRANSFERS_FROM').hasLabel('account')
+                .in_('OWNS').hasLabel('user').as('receiver')
                 .select('sender', 'receiver')
                 .by('location')
                 .filter(select('sender').is(P.neq(select('receiver'))))
@@ -98,11 +100,11 @@ class FraudDetectionService:
                 description="Detect new users with high transaction activity",
                 query="""
                 g.V().hasLabel('user')
-                .filter(values('signup_date').is(P.gte(datetime.now() - timedelta(days=7))))
-                .outE('sent')
-                .inV()
+                .has('signup_date', P.gte(datetime.now() - timedelta(days=7)))
+                .out('OWNS').hasLabel('account')
+                .out('TRANSFERS_TO')
                 .hasLabel('transaction')
-                .group().by('sender_id')
+                .group().by(in_('TRANSFERS_TO').values('account_id'))
                 .unfold()
                 .filter(select(values).count(local).is(P.gte(10)))
                 .select(values)
@@ -177,15 +179,16 @@ class FraudDetectionService:
             return None
 
     async def detect_circular_flows(self) -> List[Dict[str, Any]]:
-        """Detect circular money flows between users"""
+        """Detect circular money flows between accounts via transactions"""
         query = """
-        g.V().hasLabel('transaction')
+        g.V().hasLabel('account')
         .as('start')
-        .outE('sent').inV().hasLabel('user')
-        .outE('sent').inV().hasLabel('transaction')
-        .outE('received_by').inV().hasLabel('user')
-        .outE('sent').inV().hasLabel('transaction')
-        .outE('received_by').inV().hasLabel('user')
+        .out('TRANSFERS_TO').hasLabel('transaction')
+        .out('TRANSFERS_FROM').hasLabel('account')
+        .out('TRANSFERS_TO').hasLabel('transaction')
+        .out('TRANSFERS_FROM').hasLabel('account')
+        .out('TRANSFERS_TO').hasLabel('transaction')
+        .out('TRANSFERS_FROM').hasLabel('account')
         .where(eq('start'))
         .path()
         .by(valueMap())
@@ -219,14 +222,13 @@ class FraudDetectionService:
             return []
 
     async def detect_transaction_bursts(self) -> List[Dict[str, Any]]:
-        """Detect rapid successive transactions"""
+        """Detect rapid successive transactions from same account"""
         query = """
-        g.V().hasLabel('user')
-        .outE('sent')
-        .inV()
+        g.V().hasLabel('account')
+        .out('TRANSFERS_TO')
         .hasLabel('transaction')
         .order().by('timestamp')
-        .group().by('sender_id')
+        .group().by(in_('TRANSFERS_TO').values('account_id'))
         .unfold()
         .filter(select(values).count(local).is(P.gte(5)))
         .select(values)

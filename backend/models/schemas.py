@@ -17,6 +17,11 @@ class FraudRiskLevel(str, Enum):
     HIGH = "high"
     CRITICAL = "critical"
 
+class FraudCheckStatus(str, Enum):
+    REVIEW = "review"
+    BLOCKED = "blocked"
+    CLEARED = "cleared"
+
 class User(BaseModel):
     id: str
     name: str
@@ -34,23 +39,52 @@ class Account(BaseModel):
     balance: float
     created_date: datetime
     is_active: bool = True
+    fraud_flag: bool = False
+
+class Device(BaseModel):
+    id: str
+    type: str
+    os: str
+    browser: str
+    fingerprint: str
+    first_seen: str
+    last_login: str
+    login_count: int
+    fraud_flag: bool = False
 
 class Transaction(BaseModel):
     id: str
     sender_id: str
     receiver_id: str
     amount: float
-    currency: str = "USD"
+    currency: str = "INR"
     timestamp: datetime
     location: str
     device_id: Optional[str] = None
     status: TransactionStatus = TransactionStatus.COMPLETED
     fraud_score: float = Field(ge=0, le=100, default=0.0)
+    
+    # Enhanced fields for frontend display
+    sender_name: Optional[str] = None
+    receiver_name: Optional[str] = None
+    is_fraud: bool = False
+    fraud_rules: List[str] = []
+    direction: Optional[str] = None
+    original_amount: Optional[float] = None
+
+class FraudCheckResult(BaseModel):
+    fraud_score: float = Field(ge=0, le=100)
+    status: FraudCheckStatus
+    rule: str  # e.g., "flaggedAccountsRule"
+    evaluation_timestamp: datetime
+    reason: str
+    details: Optional[str] = None  # JSON string of additional details
 
 class UserSummary(BaseModel):
     user: User
     accounts: List[Account]
-    recent_transactions: List[Transaction]
+    devices: List[Device]
+    recent_transactions: List[Any]  # Allow any type to include enhanced fields
     total_transactions: int
     total_amount_sent: float
     total_amount_received: float

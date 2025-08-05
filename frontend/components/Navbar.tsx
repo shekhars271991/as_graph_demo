@@ -7,11 +7,12 @@ import { Moon, Sun, Activity } from 'lucide-react'
 import { useTheme } from 'next-themes'
 
 const navigation = [
-  { name: 'Dashboard', href: '/' },
+  // { name: 'Dashboard', href: '/' },
   { name: 'Users', href: '/users' },
   { name: 'Transactions', href: '/transactions' },
-  { name: 'Fraud Patterns', href: '/fraud-patterns' },
-  { name: 'Graph View', href: '/graph' },
+  // { name: 'Fraud Patterns', href: '/fraud-patterns' },
+  // { name: 'Graph View', href: '/graph' },
+  { name: 'Admin', href: '/admin' },
 ]
 
 export default function Navbar() {

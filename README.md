@@ -32,6 +32,8 @@ A comprehensive fraud detection system built with FastAPI backend and Next.js fr
 2. **Node.js 16+**
 3. **Aerospike Graph Service** running on `localhost:8182`
 
+
+
 ### Installation & Running
 
 1. **Clone the repository**
@@ -42,14 +44,28 @@ A comprehensive fraud detection system built with FastAPI backend and Next.js fr
 
 2. **Run the application**
    ```bash
+   # Basic startup
    ./run_app.sh
+   
+   # With data management options
+   ./run_app.sh --help                    # Show all options
+   ./run_app.sh --fresh-start             # Delete data and load data from users.json
+   ./run_app.sh -d -l                     # Delete data and load data from users.json
+   ./run_app.sh --load-sample             # Load data from users.json
    ```
+
+   **Command Line Options:**
+   - `-h, --help` - Show help message
+   - `-d, --delete-data` - Delete all existing data before starting
+   - `-l, --load-sample` - Load data from users.json after starting applications
+   - `--fresh-start` - Delete data and load data from users.json (equivalent to -d -l)
 
    This script will:
    - Install Python dependencies and create virtual environment
    - Install Node.js dependencies
-   - Start the FastAPI backend on port 8000
-   - Start the Next.js frontend on port 3000
+   - Start the FastAPI backend on port 4000
+   - Start the Next.js frontend on port 4001
+   - Optionally delete existing data and load data from users.json
 
 3. **Access the application**
    - Frontend: http://localhost:4001
@@ -90,13 +106,14 @@ DemoApp/
 
 ### Core Endpoints
 - `GET /` - Health check
-- `POST /seed-data` - Seed sample data
+- `POST /seed-data` - Load data from users.json file
 - `GET /detect/fraudulent-transactions` - Run fraud detection
 - `GET /dashboard/stats` - Get dashboard statistics
 
 ### User Management
 - `GET /user/{user_id}/summary` - Get user summary
-- `GET /users/search` - Search users
+- `GET /users` - Get paginated list of all users
+- `GET /users/search` - Search users with pagination
 
 ### Transaction Management
 - `GET /transaction/{transaction_id}` - Get transaction details
