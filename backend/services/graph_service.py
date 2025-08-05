@@ -654,8 +654,37 @@ class GraphService:
                         "user_email": dest_user_props.get('email', [''])[0]
                     }
                   
-                    # Get fraud results (empty for now)
-                    fraud_results = []
+                    # Get fraud results - look for flagged_by edges to fraud check results
+                    def get_fraud_results():
+                        try:
+                            logger.info(f"Looking for fraud results for transaction vertex: {transaction_vertex}")
+                            fraud_result_vertices = self.client.V(transaction_vertex).out("flagged_by").to_list()
+                            logger.info(f"Found {len(fraud_result_vertices)} fraud result vertices")
+                            fraud_results = []
+                            
+                            for fraud_vertex in fraud_result_vertices:
+                                logger.info(f"Processing fraud vertex: {fraud_vertex}")
+                                fraud_props = self.client.V(fraud_vertex).value_map().next()
+                                logger.info(f"Fraud vertex properties: {fraud_props}")
+                                
+                                # Extract properties
+                                fraud_result = {}
+                                for key, value in fraud_props.items():
+                                    if isinstance(value, list) and len(value) > 0:
+                                        fraud_result[key] = value[0]
+                                    else:
+                                        fraud_result[key] = value
+                                
+                                fraud_results.append(fraud_result)
+                            
+                            logger.info(f"Found {len(fraud_results)} fraud results for transaction {transaction_id}")
+                            return fraud_results
+                        
+                        except Exception as e:
+                            logger.error(f"Error getting fraud results for transaction {transaction_id}: {e}")
+                            return []
+                    
+                    fraud_results = await loop.run_in_executor(None, get_fraud_results)
                     
                     return {
                         "transaction": transaction_data,

@@ -90,6 +90,8 @@ export default function TransactionDetailPage() {
   const transactionId = params.id as string
   
   const [transactionDetails, setTransactionDetails] = useState<TransactionDetail | null>(null)
+  const [fraudResults, setFraudResults] = useState<any[]>([])
+  const [fraudResultsLoading, setFraudResultsLoading] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('overview')
@@ -97,6 +99,7 @@ export default function TransactionDetailPage() {
   useEffect(() => {
     if (transactionId) {
       loadTransactionDetails()
+      loadFraudResults()
     }
   }, [transactionId])
 
@@ -123,11 +126,27 @@ export default function TransactionDetailPage() {
     }
   }
 
+  const loadFraudResults = async () => {
+    setFraudResultsLoading(true)
+    
+    try {
+      const response = await api.get(`/transaction/${transactionId}/fraud-results`)
+      if (response.data) {
+        setFraudResults(response.data.fraud_results || [])
+      }
+    } catch (error: any) {
+      console.error('Failed to load fraud results:', error)
+      setFraudResults([])
+    } finally {
+      setFraudResultsLoading(false)
+    }
+  }
+
   const getRiskLevel = (score: number) => {
-    if (score < 25) return { level: 'Low', color: 'success' }
-    if (score < 50) return { level: 'Medium', color: 'warning' }
-    if (score < 75) return { level: 'High', color: 'destructive' }
-    return { level: 'Critical', color: 'destructive' }
+    if (score < 25) return { level: 'Low', color: 'default' }
+    if (score < 50) return { level: 'Medium', color: 'secondary' } 
+    if (score < 75) return { level: 'High', color: 'secondary' }
+    return { level: 'Critical', color: 'secondary' }
   }
 
   const formatDate = (dateString: string | undefined) => {
@@ -182,6 +201,27 @@ export default function TransactionDetailPage() {
         return <Clock className="h-4 w-4 text-muted-foreground" />
     }
   }
+
+  const formatTime = (dateString: string | undefined) => {
+    if (!dateString) return 'Unknown'
+    return new Date(dateString).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  // Calculate overall fraud score and risk from actual fraud results
+  const calculateOverallRisk = () => {
+    if (!fraudResults || fraudResults.length === 0) {
+      return { score: 0, level: 'Low', color: 'default' }
+    }
+    
+    const maxScore = Math.max(...fraudResults.map(r => r.fraud_score || 0))
+    const riskLevel = getRiskLevel(maxScore)
+    return { score: maxScore, level: riskLevel.level, color: riskLevel.color }
+  }
+
+  const overallRisk = calculateOverallRisk()
 
   if (loading) {
     return (
@@ -258,8 +298,8 @@ export default function TransactionDetailPage() {
               Fraudulent
             </Badge>
           )}
-          <Badge variant={risk.color as any} className="text-lg px-4 py-2">
-            {risk.level} Risk ({(transaction.fraud_score || 0).toFixed(1)})
+          <Badge variant={overallRisk.color as any} className="text-sm px-3 py-1 font-medium border">
+            {overallRisk.level} Risk ({(overallRisk.score || 0).toFixed(1)})
           </Badge>
         </div>
       </div>
@@ -307,12 +347,12 @@ export default function TransactionDetailPage() {
         </Card>
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Fraud Rules</p>
-                <p className="text-2xl font-bold">{fraud_results.length}</p>
+            <div className="text-right">
+              <p className="text-sm text-muted-foreground">Fraud Rules</p>
+              <div className="flex items-center gap-2">
+                <p className="text-2xl font-bold">{fraudResults.length}</p>
+                <Shield className="h-5 w-5 text-muted-foreground" />
               </div>
-              <Shield className="h-8 w-8 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -390,14 +430,14 @@ export default function TransactionDetailPage() {
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Fraud Score</p>
                     <div className="flex items-center gap-2">
-                      <div className="text-2xl font-bold">{transaction.fraud_score?.toFixed(1) || '0.0'}</div>
-                      <Badge variant={risk.color as any}>{risk.level}</Badge>
+                      <div className="text-2xl font-bold">{overallRisk.score?.toFixed(1) || '0.0'}</div>
+                      <Badge variant={overallRisk.color as any}>{overallRisk.level}</Badge>
                     </div>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Fraud Status</p>
                     <div className="flex items-center gap-2">
-                      {transaction.is_fraud ? (
+                      {fraudResults.length > 0 ? (
                         <>
                           <AlertTriangle className="h-4 w-4 text-destructive" />
                           <Badge variant="destructive">Flagged</Badge>
@@ -410,18 +450,6 @@ export default function TransactionDetailPage() {
                       )}
                     </div>
                   </div>
-                  {transaction.fraud_type && (
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Fraud Type</p>
-                      <p className="text-lg font-semibold capitalize">{transaction.fraud_type}</p>
-                    </div>
-                  )}
-                  {transaction.fraud_reason && (
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Reason</p>
-                      <p className="text-sm text-muted-foreground">{transaction.fraud_reason}</p>
-                    </div>
-                  )}
                 </div>
               </CardContent>
             </Card>
@@ -541,52 +569,69 @@ export default function TransactionDetailPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5" />
-                Fraud Detection Results ({fraud_results.length})
+                Fraud Detection Results ({fraudResults.length})
               </CardTitle>
               <CardDescription>
                 Detailed analysis of fraud detection rules and their results
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {fraud_results.length > 0 ? (
+              {fraudResultsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Loading fraud analysis...</span>
+                  </div>
+                </div>
+              ) : fraudResults.length > 0 ? (
                 <div className="space-y-4">
-                  {fraud_results.map((result) => (
-                    <Card key={result.rule_id} className="p-4">
+                  {fraudResults.map((result, index) => (
+                    <Card key={index} className="p-4 border-red-200 bg-red-50">
                       <div className="flex items-start justify-between">
                         <div className="flex-1 space-y-2">
                           <div className="flex items-center gap-2">
-                            <h4 className="font-semibold">{result.rule_name}</h4>
-                            <Badge 
-                              variant={result.triggered ? 'destructive' : 'secondary'}
-                              className="text-xs"
-                            >
-                              {result.triggered ? (
-                                <>
-                                  <AlertTriangle className="h-3 w-3 mr-1" />
-                                  Triggered
-                                </>
-                              ) : (
-                                <>
-                                  <CheckCircle className="h-3 w-3 mr-1" />
-                                  Passed
-                                </>
-                              )}
+                            <h4 className="font-semibold">{result.rule || 'Unknown Rule'}</h4>
+                            <Badge variant="destructive" className="text-xs">
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              Triggered
                             </Badge>
                           </div>
-                          <p className="text-sm text-muted-foreground">{result.description}</p>
+                          <p className="text-sm text-muted-foreground">{result.reason}</p>
                           <div className="flex items-center gap-4 text-sm">
                             <div className="flex items-center gap-1">
-                              <BarChart3 className="h-3 w-3 text-muted-foreground" />
-                              <span>Risk Score: {result.risk_score.toFixed(1)}</span>
+                              <Target className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-muted-foreground">Risk Score:</span>
+                              <span className="font-medium">{result.fraud_score}/100</span>
                             </div>
-                            <Badge variant="secondary" className="text-xs">
-                              {result.risk_level}
-                            </Badge>
                             <div className="flex items-center gap-1">
-                              <Clock className="h-3 w-3 text-muted-foreground" />
-                              <span>{formatDateTime(result.timestamp)}</span>
+                              <Clock className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-muted-foreground">Detected:</span>
+                              <span className="font-medium">{formatDateTime(result.evaluation_timestamp)}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Flag className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-muted-foreground">Status:</span>
+                              <span className="font-medium capitalize">{result.status}</span>
                             </div>
                           </div>
+                          
+                          {/* Parse and display details if available */}
+                          {result.details && (
+                            <div className="mt-3 p-3 bg-gray-100 rounded-lg">
+                              <h5 className="text-sm font-medium mb-2">Detection Details:</h5>
+                              <div className="text-sm text-gray-600">
+                                <pre className="whitespace-pre-wrap">{result.details}</pre>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="ml-4">
+                          <Badge 
+                            variant={result.fraud_score >= 75 ? 'destructive' : 'secondary'}
+                            className="text-xs"
+                          >
+                            {getRiskLevel(result.fraud_score).level} Risk
+                          </Badge>
                         </div>
                       </div>
                     </Card>
@@ -595,8 +640,10 @@ export default function TransactionDetailPage() {
               ) : (
                 <div className="text-center py-8">
                   <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">No fraud detection results available.</p>
-                  <p className="text-sm text-muted-foreground mt-2">
+                  <h3 className="text-lg font-medium text-muted-foreground mb-2">
+                    No fraud detection results available.
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
                     Fraud detection analysis has not been performed on this transaction.
                   </p>
                 </div>
