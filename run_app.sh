@@ -74,7 +74,7 @@ start_docker_containers() {
     fi
     
     # Start containers in detached mode
-    docker-compose up -d
+    # docker-compose up -d
     
     if [ $? -eq 0 ]; then
         echo "✅ Docker containers started successfully"
@@ -108,7 +108,7 @@ start_docker_containers() {
 stop_docker_containers() {
     if [ "$DOCKER_COMPOSE_STARTED" = true ]; then
         echo "🐳 Stopping Docker Compose containers..."
-        docker-compose down
+        # docker-compose down
         echo "✅ Docker containers stopped"
     fi
 }

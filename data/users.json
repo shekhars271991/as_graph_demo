@@ -15,7 +15,8 @@
           "id": "A00001",
           "type": "savings",
           "balance": 160697.08,
-          "created_date": "2024-07-26T20:19:00Z"
+          "created_date": "2024-07-26T20:19:00Z",
+          "fraud_flag": true
         }
       ],
       "devices": [
@@ -140,7 +141,8 @@
           "id": "A00007",
           "type": "savings",
           "balance": 377477.14,
-          "created_date": "2023-12-27T10:11:00Z"
+          "created_date": "2023-12-27T10:11:00Z",
+          "fraud_flag": true
         }
       ],
       "devices": [
@@ -264,7 +266,8 @@
           "fingerprint": "0dd2b3752d462dc54fd19c5d455f191db04c757a7abf0401213f49600ec0a8d1",
           "first_seen": "2023-04-09T00:00:00Z",
           "last_login": "2024-02-14T11:29:00Z",
-          "login_count": 15
+          "login_count": 15,
+          "fraud_flag": true
         }
       ]
     },
@@ -539,7 +542,8 @@
           "fingerprint": "517d0f31b30e4fdc760f32985bf8e6224c264807c528b1ee6249b08cf3cae8af",
           "first_seen": "2023-12-08T00:00:00Z",
           "last_login": "2023-09-11T12:52:00Z",
-          "login_count": 135
+          "login_count": 135,
+          "fraud_flag": true
         },
         {
           "id": "DEV0119",
@@ -683,7 +687,8 @@
           "id": "A00033",
           "type": "savings",
           "balance": 77151.2,
-          "created_date": "2023-02-24T05:10:00Z"
+          "created_date": "2023-02-24T05:10:00Z",
+          "fraud_flag": true
         }
       ],
       "devices": [
@@ -1988,7 +1993,8 @@
           "id": "A00091",
           "type": "savings",
           "balance": 65717.22,
-          "created_date": "2023-06-01T02:14:00Z"
+          "created_date": "2023-06-01T02:14:00Z",
+          "fraud_flag": true
         }
       ],
       "devices": [
@@ -2010,7 +2016,8 @@
           "fingerprint": "ac9f83e6d15e99b09d95dbbafcb68ba95add0998325cd888934fc93a6bff8fd1",
           "first_seen": "2023-06-21T00:00:00Z",
           "last_login": "2024-09-04T23:02:00Z",
-          "login_count": 18
+          "login_count": 18,
+          "fraud_flag": true
         },
         {
           "id": "DEV0064",
@@ -2987,7 +2994,8 @@
           "id": "A00137",
           "type": "savings",
           "balance": 144676.32,
-          "created_date": "2024-06-12T04:15:00Z"
+          "created_date": "2024-06-12T04:15:00Z",
+          "fraud_flag": true
         }
       ],
       "devices": [
@@ -3410,7 +3418,8 @@
           "id": "A00159",
           "type": "savings",
           "balance": 499080.85,
-          "created_date": "2023-12-28T20:59:00Z"
+          "created_date": "2023-12-28T20:59:00Z",
+          "fraud_flag": true
         },
         {
           "id": "A00160",

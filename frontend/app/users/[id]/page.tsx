@@ -52,6 +52,7 @@ interface Account {
   account_type: string
   balance: number
   created_date: string
+  fraud_flag?: boolean
 }
 
 interface Transaction {
@@ -75,6 +76,7 @@ interface Device {
   type: string
   os: string
   browser: string
+  fraud_flag?: boolean
 }
 
 interface ConnectedDeviceUser {
@@ -444,7 +446,15 @@ export default function UserDetailPage() {
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="font-semibold capitalize">{account.account_type} Account</p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold capitalize">{account.account_type} Account</p>
+                              {account.fraud_flag && (
+                                <Badge variant="destructive" className="text-xs flex items-center gap-1">
+                                  <AlertTriangle className="h-3 w-3" />
+                                  FRAUD
+                                </Badge>
+                              )}
+                            </div>
                             <p className="text-sm text-muted-foreground">ID: {account.id}</p>
                           </div>
                           <CreditCard className="h-8 w-8 text-muted-foreground" />
@@ -582,7 +592,15 @@ export default function UserDetailPage() {
                            <div className="flex items-center gap-3">
                              {getDeviceIcon(device.type)}
                              <div>
-                               <p className="font-semibold capitalize">{device.type}</p>
+                               <div className="flex items-center gap-2">
+                                 <p className="font-semibold capitalize">{device.type}</p>
+                                 {device.fraud_flag && (
+                                   <Badge variant="destructive" className="text-xs flex items-center gap-1">
+                                     <AlertTriangle className="h-3 w-3" />
+                                     FRAUD
+                                   </Badge>
+                                 )}
+                               </div>
                                <p className="text-sm text-muted-foreground">{device.os}</p>
                                <p className="text-xs text-muted-foreground">{device.browser}</p>
                              </div>

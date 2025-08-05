@@ -321,6 +321,51 @@ async def stop_transaction_generation():
         logger.error(f"❌ Failed to stop transaction generation: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to stop transaction generation: {str(e)}")
 
+@app.post("/transaction-generation/manual")
+async def create_manual_transaction(
+    from_account_id: str = Query(..., description="Source account ID"),
+    to_account_id: str = Query(..., description="Destination account ID"), 
+    amount: float = Query(..., gt=0, description="Transaction amount"),
+    transaction_type: str = Query("transfer", description="Transaction type")
+):
+    """Create a manual transaction between specific accounts"""
+    try:
+        result = await transaction_generator.create_manual_transaction(
+            from_account_id=from_account_id,
+            to_account_id=to_account_id,
+            amount=amount,
+            transaction_type=transaction_type
+        )
+        
+        if result.get("success"):
+            logger.info(f"✅ Manual transaction created: {result['transaction_id']}")
+            return {
+                "message": "Manual transaction created successfully",
+                "transaction_id": result["transaction_id"],
+                "from_account": from_account_id,
+                "to_account": to_account_id,
+                "amount": amount,
+                "type": transaction_type
+            }
+        else:
+            raise HTTPException(status_code=400, detail=result.get("error", "Failed to create transaction"))
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Failed to create manual transaction: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create manual transaction: {str(e)}")
+
+@app.get("/accounts")
+async def get_all_accounts():
+    """Get all accounts for manual transaction dropdowns"""
+    try:
+        accounts = await graph_service.get_all_accounts()
+        return {"accounts": accounts}
+    except Exception as e:
+        logger.error(f"❌ Failed to get accounts: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get accounts: {str(e)}")
+
 @app.get("/transaction-generation/status")
 async def get_transaction_generation_status():
     """Get current transaction generation status"""

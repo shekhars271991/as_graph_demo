@@ -90,6 +90,14 @@ interface FraudResult {
   details: any
 }
 
+interface Account {
+  account_id: string
+  account_type: string
+  balance: number
+  user_name: string
+  fraud_flag?: boolean
+}
+
 const fraudScenarios: FraudScenario[] = [
   // Real-time scenarios (RT1-RT4)
   {
@@ -512,6 +520,15 @@ export default function AdminPage() {
   const [patternLoading, setPatternLoading] = useState(false)
   const [patterns, setPatterns] = useState<ExtendedFraudPattern[]>(availablePatterns)
 
+  // Manual transaction states
+  const [accounts, setAccounts] = useState<Account[]>([])
+  const [fromAccount, setFromAccount] = useState('')
+  const [toAccount, setToAccount] = useState('')
+  const [amount, setAmount] = useState('')
+  const [transactionType, setTransactionType] = useState('transfer')
+  const [manualLoading, setManualLoading] = useState(false)
+  const [manualSuccess, setManualSuccess] = useState<string | null>(null)
+
   // Ensure component only renders on client side
   useEffect(() => {
     setIsClient(true)
@@ -613,6 +630,7 @@ export default function AdminPage() {
     }
     
     checkInitialStatus()
+    loadAccounts()
   }, [])
 
   const handleStartGeneration = async () => {
@@ -714,6 +732,76 @@ export default function AdminPage() {
   const showScenarioDetails = (scenario: FraudScenario) => {
     setSelectedScenario(scenario)
     setShowScenarioDialog(true)
+  }
+
+  // Load accounts for manual transaction dropdowns
+  const loadAccounts = async () => {
+    try {
+      const response = await fetch('/api/accounts')
+      if (response.ok) {
+        const data = await response.json()
+        setAccounts(data.accounts)
+      }
+    } catch (error) {
+      console.error('Failed to load accounts:', error)
+    }
+  }
+
+  // Create manual transaction
+  const handleCreateManualTransaction = async () => {
+    if (!fromAccount || !toAccount || !amount) {
+      setError('Please fill in all required fields')
+      return
+    }
+
+    if (fromAccount === toAccount) {
+      setError('Source and destination accounts must be different')
+      return
+    }
+
+    const amountValue = parseFloat(amount)
+    if (isNaN(amountValue) || amountValue <= 0) {
+      setError('Please enter a valid amount')
+      return
+    }
+
+    setManualLoading(true)
+    setError(null)
+    setManualSuccess(null)
+
+    try {
+      const response = await fetch(`/api/transaction-generation/manual?from_account_id=${fromAccount}&to_account_id=${toAccount}&amount=${amountValue}&transaction_type=${transactionType}`, {
+        method: 'POST'
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        
+        // Show success message
+        setManualSuccess(`Transaction ${data.transaction_id} created successfully!`)
+        
+        // Reset form
+        setFromAccount('')
+        setToAccount('')
+        setAmount('')
+        setTransactionType('transfer')
+        
+        // Clear success message after 5 seconds
+        setTimeout(() => {
+          setManualSuccess(null)
+        }, 5000)
+        
+        console.log('Manual transaction created successfully:', data.transaction_id)
+      } else {
+        const errorData = await response.json()
+        setError(errorData.detail || 'Failed to create transaction')
+      }
+    } catch (error) {
+      console.error('Failed to create manual transaction:', error)
+      setError('Failed to create transaction')
+    } finally {
+      setManualLoading(false)
+    }
   }
 
   // Fraud pattern functions
@@ -1004,53 +1092,153 @@ export default function AdminPage() {
                     </Badge>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
 
-            {/* Quick Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Database className="w-5 h-5" />
-                  <span>Quick Actions</span>
-                </CardTitle>
-                <CardDescription>
-                  Manage data and system operations
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Button
-                  variant={showClearConfirmation ? "destructive" : "outline"}
-                  onClick={handleClearTransactions}
-                  disabled={isLoading || recentTransactions.length === 0}
-                  className="w-full"
-                >
-                  {isLoading ? (
-                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <Trash2 className="w-4 h-4 mr-2" />
-                  )}
-                  {showClearConfirmation ? "Confirm Clear" : "Clear All Transactions"}
-                </Button>
-                
-                {showClearConfirmation && (
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowClearConfirmation(false)}
-                    className="w-full"
-                  >
-                    Cancel
-                  </Button>
-                )}
-                
-                <div className="text-xs text-muted-foreground">
-                  {showClearConfirmation 
-                    ? "This action cannot be undone. Click 'Confirm Clear' to proceed."
-                    : "This will remove all generated transactions from the system."
-                  }
+                {/* Quick Actions Section */}
+                <div className="pt-4 border-t">
+                  <h4 className="text-sm font-medium mb-3 flex items-center space-x-2">
+                    <Database className="w-4 h-4" />
+                    <span>Quick Actions</span>
+                  </h4>
+                  <div className="space-y-3">
+                    <Button
+                      variant={showClearConfirmation ? "destructive" : "outline"}
+                      onClick={handleClearTransactions}
+                      disabled={isLoading || recentTransactions.length === 0}
+                      className="w-full"
+                      size="sm"
+                    >
+                      {isLoading ? (
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4 mr-2" />
+                      )}
+                      {showClearConfirmation ? "Confirm Clear" : "Clear All Transactions"}
+                    </Button>
+                    
+                    {showClearConfirmation && (
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowClearConfirmation(false)}
+                        className="w-full"
+                        size="sm"
+                      >
+                        Cancel
+                      </Button>
+                    )}
+                    
+                    <div className="text-xs text-muted-foreground">
+                      {showClearConfirmation 
+                        ? "This action cannot be undone. Click 'Confirm Clear' to proceed."
+                        : "This will remove all generated transactions from the system."
+                      }
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
+
+            {/* Manual Transaction Creation */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <CreditCard className="w-5 h-5" />
+                  <span>Manual Transaction</span>
+                </CardTitle>
+                <CardDescription>
+                  Create a transaction between specific accounts
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">From Account</label>
+                    <select
+                      value={fromAccount}
+                      onChange={(e) => setFromAccount(e.target.value)}
+                      className="w-full p-2 border rounded-md bg-background"
+                      disabled={manualLoading}
+                    >
+                      <option value="">Source account</option>
+                      {accounts.map((account) => (
+                        <option key={account.account_id} value={account.account_id}>
+                          {account.account_id} - {account.user_name} ({account.account_type})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">To Account</label>
+                    <select
+                      value={toAccount}
+                      onChange={(e) => setToAccount(e.target.value)}
+                      className="w-full p-2 border rounded-md bg-background"
+                      disabled={manualLoading}
+                    >
+                      <option value="">Destination account</option>
+                      {accounts.filter(account => account.account_id !== fromAccount).map((account) => (
+                        <option key={account.account_id} value={account.account_id}>
+                          {account.account_id} - {account.user_name} ({account.account_type})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Amount (INR)</label>
+                    <Input
+                      type="number"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      placeholder="Enter amount"
+                      min="0.01"
+                      step="0.01"
+                      disabled={manualLoading}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Transaction Type</label>
+                    <select
+                      value={transactionType}
+                      onChange={(e) => setTransactionType(e.target.value)}
+                      className="w-full p-2 border rounded-md bg-background"
+                      disabled={manualLoading}
+                    >
+                      <option value="transfer">Transfer</option>
+                      <option value="payment">Payment</option>
+                      <option value="deposit">Deposit</option>
+                      <option value="withdrawal">Withdrawal</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <Button
+                  onClick={handleCreateManualTransaction}
+                  disabled={manualLoading || !fromAccount || !toAccount || !amount}
+                  className="w-full"
+                >
+                  {manualLoading ? (
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <CreditCard className="w-4 h-4 mr-2" />
+                  )}
+                  Create Transaction
+                </Button>
+                
+                {/* Success Message */}
+                {manualSuccess && (
+                  <div className="flex items-center space-x-2 p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-md">
+                    <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                    <span className="text-sm text-green-800 dark:text-green-200">{manualSuccess}</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+
           </div>
 
           {/* Recent Transactions */}
@@ -1105,9 +1293,9 @@ export default function AdminPage() {
                           </div>
                         </div>
                         
-                        <Badge className={getFraudScoreColor(transaction.fraud_score || 0)}>
+                        {/* <Badge className={getFraudScoreColor(transaction.fraud_score || 0)}>
                           {(transaction.fraud_score || 0).toFixed(1)}
-                        </Badge>
+                        </Badge> */}
                         
                         {transaction.is_fraud && (
                           <Badge variant="destructive">

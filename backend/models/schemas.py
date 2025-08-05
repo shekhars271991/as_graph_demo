@@ -39,6 +39,7 @@ class Account(BaseModel):
     balance: float
     created_date: datetime
     is_active: bool = True
+    fraud_flag: bool = False
 
 class Device(BaseModel):
     id: str
@@ -49,6 +50,7 @@ class Device(BaseModel):
     first_seen: str
     last_login: str
     login_count: int
+    fraud_flag: bool = False
 
 class Transaction(BaseModel):
     id: str

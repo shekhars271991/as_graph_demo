@@ -135,7 +135,7 @@ class TransactionGeneratorService:
         log_data = {
             "timestamp": timestamp,
             "transaction_id": transaction['id'],
-            "user_id": transaction['user_id'],
+            "user_id": transaction.get('user_id', ''),
             "account_id": transaction['account_id'],
             "receiver_user_id": transaction.get('receiver_user_id'),
             "receiver_account_id": transaction.get('receiver_account_id'),
@@ -438,6 +438,117 @@ class TransactionGeneratorService:
             "total_generated": len(self.generated_transactions),
             "transaction_count": self.transaction_counter
         }
+
+    async def create_manual_transaction(self, from_account_id: str, to_account_id: str, amount: float, transaction_type: str = "transfer") -> Dict[str, Any]:
+        """Create a manual transaction between specified accounts"""
+        try:
+            # Validate accounts exist
+            if not await self._validate_account_exists(from_account_id):
+                return {"success": False, "error": f"Source account {from_account_id} not found"}
+                
+            if not await self._validate_account_exists(to_account_id):
+                return {"success": False, "error": f"Destination account {to_account_id} not found"}
+            
+            # Prevent self-transactions
+            if from_account_id == to_account_id:
+                return {"success": False, "error": "Source and destination accounts cannot be the same"}
+            
+            # Get user_id from sender account
+            user_id = await self._get_user_id_from_account(from_account_id)
+            logger.info(f"Retrieved user_id '{user_id}' for account {from_account_id}")
+            
+            if not user_id:
+                logger.warning(f"No user_id found for account {from_account_id}, using empty string")
+                user_id = ""
+            
+            # Create transaction data
+            transaction_id = str(uuid.uuid4())
+            transaction = {
+                "id": transaction_id,
+                "user_id": user_id,
+                "account_id": from_account_id,
+                "receiver_account_id": to_account_id,
+                "amount": round(amount, 2),
+                "currency": "INR",
+                "transaction_type": transaction_type,
+                "location": "Manual Transaction",
+                "timestamp": datetime.now().isoformat(),
+                "status": "completed"
+            }
+            
+            # Store in memory
+            self.generated_transactions.append(transaction)
+            
+            # Store in graph database
+            await self._store_transaction_in_graph(transaction)
+            
+            # Run fraud detection
+            await self._run_fraud_detection(transaction)
+            
+            # Log transaction
+            self._log_transaction(transaction, "MANUAL")
+            self.transaction_counter += 1
+            
+            logger.info(f"✅ Manual transaction created: {transaction_id} from {from_account_id} to {to_account_id} amount {amount}")
+            
+            return {
+                "success": True,
+                "transaction_id": transaction_id,
+                "transaction": transaction
+            }
+            
+        except Exception as e:
+            logger.error(f"❌ Error creating manual transaction: {e}")
+            return {"success": False, "error": str(e)}
+
+    async def _validate_account_exists(self, account_id: str) -> bool:
+        """Validate that an account exists in the graph database"""
+        try:
+            if self.graph_service.client:
+                loop = asyncio.get_event_loop()
+                
+                def check_account():
+                    accounts = self.graph_service.client.V().has_label("account").has("account_id", account_id).to_list()
+                    return len(accounts) > 0
+                
+                return await loop.run_in_executor(None, check_account)
+            return False
+        except Exception as e:
+            logger.error(f"Error validating account {account_id}: {e}")
+            return False
+
+    async def _get_user_id_from_account(self, account_id: str) -> str:
+        """Get user_id from account by following OWNS relationship"""
+        try:
+            if self.graph_service.client:
+                loop = asyncio.get_event_loop()
+                
+                def get_user_id():
+                    try:
+                        # Find the account vertex
+                        account_vertex = self.graph_service.client.V().has_label("account").has("account_id", account_id).next()
+                        
+                        # Get the user who owns this account
+                        users = self.graph_service.client.V(account_vertex).in_("OWNS").has_label("user").valueMap("user_id").to_list()
+                        
+                        if users and len(users) > 0:
+                            user_props = users[0]
+                            if user_props and "user_id" in user_props:
+                                user_id_list = user_props.get("user_id", [])
+                                if user_id_list and len(user_id_list) > 0:
+                                    return user_id_list[0]
+                        
+                        logger.warning(f"No user found for account {account_id}")
+                        return ""
+                    except Exception as e:
+                        logger.error(f"Error getting user_id for account {account_id}: {e}")
+                        return ""
+                
+                return await loop.run_in_executor(None, get_user_id)
+            return ""
+        except Exception as e:
+            logger.error(f"Error in _get_user_id_from_account for {account_id}: {e}")
+            return ""
 
 # Global instance
 transaction_generator = None
