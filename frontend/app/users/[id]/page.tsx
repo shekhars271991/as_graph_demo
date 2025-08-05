@@ -504,9 +504,18 @@ export default function UserDetailPage() {
                         <div className="flex-1">
                           <div className="flex items-center gap-3">
                             <div>
-                              <p className="font-semibold">Transaction {transaction.id.substring(0, 8)}...</p>
-                              <p className="text-sm text-muted-foreground">
-                                {transaction.transaction_type || 'Transfer'}
+                              <div className="flex items-center gap-2">
+                                <p className="font-semibold">
+                                  {transaction.transaction_type ? 
+                                    `${transaction.transaction_type.charAt(0).toUpperCase() + transaction.transaction_type.slice(1)} Transaction` : 
+                                    'Transfer Transaction'}
+                                </p>
+                                <Badge variant="secondary" className="text-xs font-mono">
+                                  {transaction.id.substring(0, 8)}
+                                </Badge>
+                              </div>
+                              <p className="text-xs text-muted-foreground font-mono" title={transaction.id}>
+                                ID: {transaction.id}
                               </p>
                               {transaction.location && (
                                 <p className="text-sm text-muted-foreground">
