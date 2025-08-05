@@ -340,41 +340,92 @@ class GraphService:
                         user_accounts_sent = self.client.V(user_vertex).out("OWNS").out("TRANSFERS_TO").has("transaction_id", trans_props.get('transaction_id', '')).to_list()
                         is_sent = len(user_accounts_sent) > 0
                         
-                        # Get sender and receiver information
+                        # Get sender and receiver information with user details
                         sender_account_vertices = self.client.V(trans_vertex).in_("TRANSFERS_TO").to_list()
                         receiver_account_vertices = self.client.V(trans_vertex).out("TRANSFERS_FROM").to_list()
                         
-                        sender_id = "Unknown"
-                        receiver_id = "Unknown"
+                        sender_info = {"account_id": "Unknown", "user_name": "Unknown"}
+                        receiver_info = {"account_id": "Unknown", "user_name": "Unknown"}
                         
                         if sender_account_vertices:
                             sender_account_props = self.client.V(sender_account_vertices[0]).value_map().next()
-                            sender_id = sender_account_props.get('account_id', ['Unknown'])[0] if isinstance(sender_account_props.get('account_id'), list) else sender_account_props.get('account_id', 'Unknown')
+                            sender_account_id = sender_account_props.get('account_id', ['Unknown'])[0] if isinstance(sender_account_props.get('account_id'), list) else sender_account_props.get('account_id', 'Unknown')
+                            sender_info["account_id"] = sender_account_id
+                            
+                            # Get sender user information
+                            sender_user_vertices = self.client.V(sender_account_vertices[0]).in_("OWNS").to_list()
+                            logger.info(f"Found {len(sender_user_vertices)} sender user vertices for account {sender_account_id}")
+                            if sender_user_vertices:
+                                sender_user_props = self.client.V(sender_user_vertices[0]).value_map().next()
+                                sender_user_name = sender_user_props.get('name', ['Unknown'])[0] if isinstance(sender_user_props.get('name'), list) else sender_user_props.get('name', 'Unknown')
+                                sender_info["user_name"] = sender_user_name
+                                logger.info(f"Sender user name: {sender_user_name}")
                         
                         if receiver_account_vertices:
                             receiver_account_props = self.client.V(receiver_account_vertices[0]).value_map().next()
-                            receiver_id = receiver_account_props.get('account_id', ['Unknown'])[0] if isinstance(receiver_account_props.get('account_id'), list) else receiver_account_props.get('account_id', 'Unknown')
+                            receiver_account_id = receiver_account_props.get('account_id', ['Unknown'])[0] if isinstance(receiver_account_props.get('account_id'), list) else receiver_account_props.get('account_id', 'Unknown')
+                            receiver_info["account_id"] = receiver_account_id
+                            
+                            # Get receiver user information
+                            receiver_user_vertices = self.client.V(receiver_account_vertices[0]).in_("OWNS").to_list()
+                            logger.info(f"Found {len(receiver_user_vertices)} receiver user vertices for account {receiver_account_id}")
+                            if receiver_user_vertices:
+                                receiver_user_props = self.client.V(receiver_user_vertices[0]).value_map().next()
+                                receiver_user_name = receiver_user_props.get('name', ['Unknown'])[0] if isinstance(receiver_user_props.get('name'), list) else receiver_user_props.get('name', 'Unknown')
+                                receiver_info["user_name"] = receiver_user_name
+                                logger.info(f"Receiver user name: {receiver_user_name}")
                         
-                        amount = trans_props.get('amount', 0.0)
+                        # Check for fraud detection results
+                        fraud_results = self.client.V(trans_vertex).out("flagged_by").to_list()
+                        is_fraud = len(fraud_results) > 0
+                        fraud_score = 0.0
+                        fraud_rules = []
+                        
+                        for fraud_result in fraud_results:
+                            fraud_props = self.client.V(fraud_result).value_map().next()
+                            score = fraud_props.get('fraud_score', [0.0])
+                            if isinstance(score, list) and score:
+                                fraud_score = max(fraud_score, score[0])
+                            rule = fraud_props.get('rule', ['Unknown'])
+                            if isinstance(rule, list) and rule:
+                                fraud_rules.append(rule[0])
+                        
+                        # Create enhanced transaction dictionary with all fields
+                        transaction_amount = trans_props.get('amount', 0.0)
+                        
+                        # For display: negative if user sent money, positive if user received money
+                        display_amount = -transaction_amount if is_sent else transaction_amount
+                        
+                        logger.info(f"Creating transaction with sender_name: {sender_info['user_name']}, receiver_name: {receiver_info['user_name']}, is_sent: {is_sent}, amount: {display_amount}")
+                        
+                        transaction_dict = {
+                            "id": trans_props.get('transaction_id', ''),
+                            "sender_id": sender_info["account_id"],
+                            "receiver_id": receiver_info["account_id"],
+                            "amount": display_amount,  # Use display amount with proper sign
+                            "currency": trans_props.get('currency', 'INR'),
+                            "timestamp": trans_props.get('timestamp', ''),
+                            "location": trans_props.get('location', ''),
+                            "status": trans_props.get('status', 'completed'),
+                            "fraud_score": fraud_score,
+                            # Enhanced fields for frontend
+                            "sender_name": sender_info["user_name"],
+                            "receiver_name": receiver_info["user_name"],
+                            "is_fraud": is_fraud,
+                            "fraud_rules": fraud_rules,
+                            "direction": "sent" if is_sent else "received",
+                            "original_amount": transaction_amount
+                        }
+                        
+                        logger.info(f"Created transaction dict with enhanced fields: {transaction_dict}")
+                        
+                        # Update totals with original amount (not display amount)
                         if is_sent:
-                            total_amount_sent += amount
+                            total_amount_sent += transaction_amount
                         else:
-                            total_amount_received += amount
+                            total_amount_received += transaction_amount
                         
-                        # Create transaction object
-                        transaction = Transaction(
-                            id=trans_props.get('transaction_id', ''),
-                            sender_id=sender_id,
-                            receiver_id=receiver_id,
-                            amount=amount,
-                            currency=trans_props.get('currency', 'INR'),
-                            timestamp=trans_props.get('timestamp', ''),
-                            location=trans_props.get('location', ''),
-                            status=TransactionStatus(trans_props.get('status', 'completed')),
-                            fraud_score=0.0  # Default fraud score
-                        )
-                        
-                        recent_transactions.append(transaction)
+                        recent_transactions.append(transaction_dict)
                         
                     except Exception as e:
                         logger.error(f"Error processing transaction vertex: {e}")
@@ -407,7 +458,7 @@ class GraphService:
                     ),
                     accounts=accounts,
                     devices=devices,
-                    recent_transactions=recent_transactions,
+                    recent_transactions=recent_transactions,  # This is now a list of dicts with custom fields
                     total_transactions=total_transactions,
                     total_amount_sent=total_amount_sent,
                     total_amount_received=total_amount_received,

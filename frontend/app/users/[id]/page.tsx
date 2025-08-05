@@ -65,10 +65,15 @@ interface Transaction {
   fraud_status?: string
   fraud_reason?: string
   transaction_type?: string
-
   location?: string
   is_fraud?: boolean
   fraud_type?: string
+  sender_id: string
+  receiver_id: string
+  sender_name?: string
+  receiver_name?: string
+  fraud_rules?: string[]
+  direction?: string
 }
 
 interface Device {
@@ -196,6 +201,31 @@ export default function UserDetailPage() {
     if (value === 'connections') {
       loadConnectedDeviceUsers()
     }
+  }
+
+  // Helper function to get user name by account ID (temporary fix)
+  const getUserNameByAccountId = (accountId: string) => {
+    if (!userDetails || !userDetails.accounts) return 'Unknown User'
+    
+    // Check if it's the current user's account
+    const userAccount = userDetails.accounts.find(acc => acc.id === accountId)
+    if (userAccount) return userDetails.user.name
+    
+    // For other accounts, we'll need to make an API call or show "Unknown User"
+    return 'Unknown User'
+  }
+
+  // Helper function to determine transaction direction
+  const getTransactionDirection = (transaction: any) => {
+    if (!userDetails || !userDetails.accounts) return 'unknown'
+    
+    const userAccountIds = userDetails.accounts.map(acc => acc.id)
+    const isSender = userAccountIds.includes(transaction.sender_id)
+    const isReceiver = userAccountIds.includes(transaction.receiver_id)
+    
+    if (isSender && !isReceiver) return 'sent'
+    if (isReceiver && !isSender) return 'received'
+    return 'internal' // both sender and receiver are user's accounts
   }
 
   if (loading) {
@@ -498,46 +528,64 @@ export default function UserDetailPage() {
             <CardContent>
               {userDetails.recent_transactions.length > 0 ? (
                 <div className="space-y-4">
-                  {userDetails.recent_transactions.map((transaction) => (
-                    <Card key={transaction.id} className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <p className="font-semibold">
-                                  {transaction.transaction_type ? 
-                                    `${transaction.transaction_type.charAt(0).toUpperCase() + transaction.transaction_type.slice(1)} Transaction` : 
-                                    'Transfer Transaction'}
-                                </p>
-                                <Badge variant="secondary" className="text-xs font-mono">
-                                  {transaction.id.substring(0, 8)}
-                                </Badge>
-                              </div>
-                              <p className="text-xs text-muted-foreground font-mono" title={transaction.id}>
-                                ID: {transaction.id}
+                  {userDetails.recent_transactions.map((transaction) => {
+                    const direction = getTransactionDirection(transaction)
+                    const displayAmount = direction === 'sent' ? -Math.abs(transaction.amount) : Math.abs(transaction.amount)
+                    const senderName = getUserNameByAccountId(transaction.sender_id)
+                    const receiverName = getUserNameByAccountId(transaction.receiver_id)
+                    const isFraud = transaction.fraud_score > 0
+                    
+                    return (
+                    <Card key={transaction.id} className={`p-4 ${isFraud ? 'border-red-200 bg-red-50' : ''}`}>
+                      <div className="space-y-3">
+                        {/* Transaction Header */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold">
+                                {transaction.transaction_type ? 
+                                  `${transaction.transaction_type.charAt(0).toUpperCase() + transaction.transaction_type.slice(1)} Transaction` : 
+                                  'Transfer Transaction'}
                               </p>
-                              {transaction.location && (
-                                <p className="text-sm text-muted-foreground">
-                                  <MapPin className="h-3 w-3 inline mr-1" />
-                                  {transaction.location}
-                                </p>
-                              )}
+                              <Badge variant="secondary" className="text-xs font-mono">
+                                {transaction.id.substring(0, 8)}
+                              </Badge>
                             </div>
                           </div>
-                        </div>
-                        <div className="text-right space-y-1">
                           <div className="flex items-center gap-2">
-                            <p className={`text-lg font-bold ${transaction.amount < 0 ? 'text-destructive' : 'text-green-600'}`}>
-                              {formatCurrency(Math.abs(transaction.amount))}
+                            <p className={`text-lg font-bold ${displayAmount < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                              {displayAmount < 0 ? '-' : '+'}{formatCurrency(Math.abs(displayAmount))}
                             </p>
-                            {transaction.amount < 0 ? (
-                              <TrendingDown className="h-4 w-4 text-destructive" />
+                            {displayAmount < 0 ? (
+                              <TrendingDown className="h-4 w-4 text-red-600" />
                             ) : (
                               <TrendingUp className="h-4 w-4 text-green-600" />
                             )}
                           </div>
-                          <div className="flex items-center gap-2">
+                        </div>
+
+                        {/* Transaction Flow */}
+                        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-600">From</p>
+                            <p className="font-semibold">{senderName}</p>
+                            <p className="text-xs text-gray-500 font-mono">{transaction.sender_id}</p>
+                          </div>
+                          <div className="flex items-center">
+                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                              <span className="text-blue-600">→</span>
+                            </div>
+                          </div>
+                          <div className="flex-1 text-right">
+                            <p className="text-sm font-medium text-gray-600">To</p>
+                            <p className="font-semibold">{receiverName}</p>
+                            <p className="text-xs text-gray-500 font-mono">{transaction.receiver_id}</p>
+                          </div>
+                        </div>
+
+                        {/* Transaction Details */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
                             <Badge 
                               variant={transaction.status === 'completed' ? 'default' : 'secondary'}
                               className="text-xs"
@@ -549,25 +597,49 @@ export default function UserDetailPage() {
                               )}
                               {transaction.status}
                             </Badge>
-                            {transaction.is_fraud && (
-                              <Badge variant="destructive" className="text-xs">
-                                <AlertTriangle className="h-3 w-3 mr-1" />
-                                Fraud
-                              </Badge>
+                            
+                            {transaction.location && (
+                              <div className="flex items-center gap-1">
+                                <MapPin className="h-3 w-3 text-gray-400" />
+                                <span className="text-xs text-gray-500">{transaction.location}</span>
+                              </div>
                             )}
                           </div>
-                                                     <div className="flex items-center gap-2">
-                             <Badge variant="secondary" className="text-xs">
-                               Score: {(transaction.fraud_score || 0).toFixed(1)}
-                             </Badge>
+                          
+                          <div className="flex items-center gap-2">
                             <p className="text-xs text-muted-foreground">
                               {formatDateTime(transaction.timestamp)}
                             </p>
                           </div>
                         </div>
+
+                        {/* Fraud Detection Results */}
+                        {isFraud && (
+                          <div className="border-t pt-3 mt-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="destructive" className="text-xs">
+                                  <AlertTriangle className="h-3 w-3 mr-1" />
+                                  FRAUD DETECTED
+                                </Badge>
+                              </div>
+                              
+                              <Badge variant="secondary" className="text-xs">
+                                Risk Score: {(transaction.fraud_score || 0).toFixed(1)}
+                              </Badge>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Transaction ID - Expandable */}
+                        <div className="border-t pt-2">
+                          <p className="text-xs text-muted-foreground font-mono" title={transaction.id}>
+                            Full ID: {transaction.id}
+                          </p>
+                        </div>
                       </div>
                     </Card>
-                  ))}
+                  )})}
                 </div>
               ) : (
                 <div className="text-center py-8">

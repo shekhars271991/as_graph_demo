@@ -63,6 +63,14 @@ class Transaction(BaseModel):
     device_id: Optional[str] = None
     status: TransactionStatus = TransactionStatus.COMPLETED
     fraud_score: float = Field(ge=0, le=100, default=0.0)
+    
+    # Enhanced fields for frontend display
+    sender_name: Optional[str] = None
+    receiver_name: Optional[str] = None
+    is_fraud: bool = False
+    fraud_rules: List[str] = []
+    direction: Optional[str] = None
+    original_amount: Optional[float] = None
 
 class FraudCheckResult(BaseModel):
     fraud_score: float = Field(ge=0, le=100)
@@ -76,7 +84,7 @@ class UserSummary(BaseModel):
     user: User
     accounts: List[Account]
     devices: List[Device]
-    recent_transactions: List[Transaction]
+    recent_transactions: List[Any]  # Allow any type to include enhanced fields
     total_transactions: int
     total_amount_sent: float
     total_amount_received: float

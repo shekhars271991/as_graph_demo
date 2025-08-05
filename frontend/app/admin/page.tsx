@@ -528,10 +528,44 @@ export default function AdminPage() {
   const [transactionType, setTransactionType] = useState('transfer')
   const [manualLoading, setManualLoading] = useState(false)
   const [manualSuccess, setManualSuccess] = useState<string | null>(null)
+  
+  // Search functionality for account dropdowns
+  const [fromAccountSearch, setFromAccountSearch] = useState('')
+  const [toAccountSearch, setToAccountSearch] = useState('')
+  const [showFromDropdown, setShowFromDropdown] = useState(false)
+  const [showToDropdown, setShowToDropdown] = useState(false)
+  
+  // Filter accounts based on search
+  const filteredFromAccounts = accounts.filter(account => 
+    account.account_id.toLowerCase().includes(fromAccountSearch.toLowerCase()) ||
+    account.user_name.toLowerCase().includes(fromAccountSearch.toLowerCase()) ||
+    account.account_type.toLowerCase().includes(fromAccountSearch.toLowerCase())
+  )
+  
+  const filteredToAccounts = accounts.filter(account => 
+    account.account_id !== fromAccount &&
+    (account.account_id.toLowerCase().includes(toAccountSearch.toLowerCase()) ||
+     account.user_name.toLowerCase().includes(toAccountSearch.toLowerCase()) ||
+     account.account_type.toLowerCase().includes(toAccountSearch.toLowerCase()))
+  )
 
   // Ensure component only renders on client side
   useEffect(() => {
     setIsClient(true)
+  }, [])
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element
+      if (!target.closest('.account-dropdown-container')) {
+        setShowFromDropdown(false)
+        setShowToDropdown(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
   // Update duration timer
@@ -1152,36 +1186,134 @@ export default function AdminPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">From Account</label>
-                    <select
-                      value={fromAccount}
-                      onChange={(e) => setFromAccount(e.target.value)}
-                      className="w-full p-2 border rounded-md bg-background"
-                      disabled={manualLoading}
-                    >
-                      <option value="">Source account</option>
-                      {accounts.map((account) => (
-                        <option key={account.account_id} value={account.account_id}>
-                          {account.account_id} - {account.user_name} ({account.account_type})
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative account-dropdown-container">
+                      <Input
+                        type="text"
+                        placeholder="Search by account ID, user name, or type..."
+                        value={fromAccountSearch}
+                        onChange={(e) => {
+                          setFromAccountSearch(e.target.value)
+                          setShowFromDropdown(true)
+                          if (!e.target.value) {
+                            setFromAccount('')
+                          }
+                        }}
+                        onFocus={() => setShowFromDropdown(true)}
+                        className="w-full"
+                        disabled={manualLoading}
+                      />
+                      {fromAccount && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFromAccount('')
+                            setFromAccountSearch('')
+                            setShowFromDropdown(false)
+                          }}
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                          ✕
+                        </button>
+                      )}
+                      {showFromDropdown && fromAccountSearch && (
+                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                          {filteredFromAccounts.length > 0 ? (
+                            filteredFromAccounts.slice(0, 10).map((account) => (
+                              <div
+                                key={account.account_id}
+                                className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                                onClick={() => {
+                                  setFromAccount(account.account_id)
+                                  setFromAccountSearch(`${account.account_id} - ${account.user_name} (${account.account_type})`)
+                                  setShowFromDropdown(false)
+                                }}
+                              >
+                                <div className="font-medium">{account.account_id}</div>
+                                <div className="text-gray-500 text-xs">{account.user_name} • {account.account_type}</div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="px-3 py-2 text-gray-500 text-sm">No accounts found</div>
+                          )}
+                          {filteredFromAccounts.length > 10 && (
+                            <div className="px-3 py-2 text-gray-500 text-xs border-t">
+                              Showing first 10 results. Type more to narrow down.
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    {fromAccount && (
+                      <div className="text-sm text-green-600 bg-green-50 p-2 rounded">
+                        ✓ Selected: {fromAccountSearch}
+                      </div>
+                    )}
                   </div>
                   
                   <div className="space-y-2">
                     <label className="text-sm font-medium">To Account</label>
-                    <select
-                      value={toAccount}
-                      onChange={(e) => setToAccount(e.target.value)}
-                      className="w-full p-2 border rounded-md bg-background"
-                      disabled={manualLoading}
-                    >
-                      <option value="">Destination account</option>
-                      {accounts.filter(account => account.account_id !== fromAccount).map((account) => (
-                        <option key={account.account_id} value={account.account_id}>
-                          {account.account_id} - {account.user_name} ({account.account_type})
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative account-dropdown-container">
+                      <Input
+                        type="text"
+                        placeholder="Search by account ID, user name, or type..."
+                        value={toAccountSearch}
+                        onChange={(e) => {
+                          setToAccountSearch(e.target.value)
+                          setShowToDropdown(true)
+                          if (!e.target.value) {
+                            setToAccount('')
+                          }
+                        }}
+                        onFocus={() => setShowToDropdown(true)}
+                        className="w-full"
+                        disabled={manualLoading}
+                      />
+                      {toAccount && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setToAccount('')
+                            setToAccountSearch('')
+                            setShowToDropdown(false)
+                          }}
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                          ✕
+                        </button>
+                      )}
+                      {showToDropdown && toAccountSearch && (
+                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                          {filteredToAccounts.length > 0 ? (
+                            filteredToAccounts.slice(0, 10).map((account) => (
+                              <div
+                                key={account.account_id}
+                                className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                                onClick={() => {
+                                  setToAccount(account.account_id)
+                                  setToAccountSearch(`${account.account_id} - ${account.user_name} (${account.account_type})`)
+                                  setShowToDropdown(false)
+                                }}
+                              >
+                                <div className="font-medium">{account.account_id}</div>
+                                <div className="text-gray-500 text-xs">{account.user_name} • {account.account_type}</div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="px-3 py-2 text-gray-500 text-sm">No accounts found</div>
+                          )}
+                          {filteredToAccounts.length > 10 && (
+                            <div className="px-3 py-2 text-gray-500 text-xs border-t">
+                              Showing first 10 results. Type more to narrow down.
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    {toAccount && (
+                      <div className="text-sm text-green-600 bg-green-50 p-2 rounded">
+                        ✓ Selected: {toAccountSearch}
+                      </div>
+                    )}
                   </div>
                 </div>
                 

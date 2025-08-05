@@ -12,6 +12,7 @@ import os
 from models.schemas import Transaction
 from services.graph_service import GraphService
 from services.rt1_fraud_service import RT1FraudService
+from services.rt2_fraud_service import RT2FraudService
 from services.rt3_fraud_service import RT3FraudService
 
 # Configure logging
@@ -101,6 +102,7 @@ class TransactionGeneratorService:
         
         # Initialize fraud detection services
         self.rt1_service = RT1FraudService(graph_service)
+        self.rt2_service = RT2FraudService(graph_service)
         self.rt3_service = RT3FraudService(graph_service)
         self.is_running = False
         self.generation_rate = 1  # transactions per second
@@ -336,17 +338,22 @@ class TransactionGeneratorService:
 
 
     async def _run_fraud_detection(self, transaction: Dict[str, Any]):
-        """Run all real-time fraud detection checks (RT1 and RT3)"""
+        """Run fraud detection on the transaction"""
         try:
             # Run RT1 fraud detection (flagged accounts)
             rt1_result = await self.rt1_service.check_transaction(transaction)
             if rt1_result.get("is_fraud"):
-                await self.rt1_service.create_fraud_check_result(transaction, rt1_result)
+                logger.warning(f"🚨 RT1 FRAUD ALERT: {rt1_result.get('reason', 'Unknown reason')}")
             
-            # Run RT3 fraud detection (supernode detection)
-            rt3_result = await self.rt3_service.check_transaction(transaction)
+            # Run RT2 fraud detection (flagged devices)
+            rt2_result = await self.rt2_service.check_transaction_fraud(transaction)
+            if rt2_result.get("is_fraud"):
+                logger.warning(f"🚨 RT2 FRAUD ALERT: {rt2_result.get('reason', 'Unknown reason')}")
+            
+            # Run RT3 fraud detection (account velocity)
+            rt3_result = await self.rt3_service.check_transaction_fraud(transaction)
             if rt3_result.get("is_fraud"):
-                await self.rt3_service.create_fraud_check_result(transaction, rt3_result)
+                logger.warning(f"🚨 RT3 FRAUD ALERT: {rt3_result.get('reason', 'Unknown reason')}")
                 
         except Exception as e:
             logger.error(f"❌ Error in fraud detection for transaction {transaction.get('id', 'unknown')}: {e}")
