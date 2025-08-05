@@ -13,7 +13,7 @@ from models.schemas import Transaction
 from services.graph_service import GraphService
 from services.rt1_fraud_service import RT1FraudService
 from services.rt2_fraud_service import RT2FraudService
-from services.rt3_fraud_service import RT3FraudService
+# from services.rt3_fraud_service import RT3FraudService
 
 # Configure logging
 def setup_logging():
@@ -103,7 +103,7 @@ class TransactionGeneratorService:
         # Initialize fraud detection services
         self.rt1_service = RT1FraudService(graph_service)
         self.rt2_service = RT2FraudService(graph_service)
-        self.rt3_service = RT3FraudService(graph_service)
+        # self.rt3_service = RT3FraudService(graph_service)
         self.is_running = False
         self.generation_rate = 1  # transactions per second
         self.generated_transactions = []
@@ -350,10 +350,10 @@ class TransactionGeneratorService:
             if rt2_result.get("is_fraud"):
                 logger.warning(f"🚨 RT2 FRAUD ALERT: {rt2_result.get('reason', 'Unknown reason')}")
             
-            # Run RT3 fraud detection (account velocity)
-            rt3_result = await self.rt3_service.check_transaction_fraud(transaction)
-            if rt3_result.get("is_fraud"):
-                logger.warning(f"🚨 RT3 FRAUD ALERT: {rt3_result.get('reason', 'Unknown reason')}")
+            # Skip RT3 fraud detection (account velocity) for now
+            # rt3_result = await self.rt3_service.check_transaction_fraud(transaction)
+            # if rt3_result.get("is_fraud"):
+            #     logger.warning(f"🚨 RT3 FRAUD ALERT: {rt3_result.get('reason', 'Unknown reason')}")
                 
         except Exception as e:
             logger.error(f"❌ Error in fraud detection for transaction {transaction.get('id', 'unknown')}: {e}")
