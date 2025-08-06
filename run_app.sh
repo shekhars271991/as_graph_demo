@@ -74,7 +74,7 @@ start_docker_containers() {
     fi
     
     # Start containers in detached mode
-    # docker-compose up -d
+    docker-compose up -d
     
     if [ $? -eq 0 ]; then
         echo "✅ Docker containers started successfully"
