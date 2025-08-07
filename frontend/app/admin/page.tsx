@@ -135,7 +135,7 @@ const fraudScenarios: FraudScenario[] = [
     name: 'Repeated Small Ring Interactions',
     description: 'Identify mule rings via 2-hop neighborhood analysis',
     riskLevel: 'High',
-    enabled: false,
+    enabled: true,
     priority: 'Phase 1',
     keyIndicators: [
       'Multiple small transactions within ring',
@@ -144,14 +144,14 @@ const fraudScenarios: FraudScenario[] = [
     ],
     commonUseCase: 'Money mule ring detection, coordinated fraud networks',
     detailedDescription: 'Detects patterns of repeated small transactions between accounts that form rings or networks, indicating coordinated money mule operations using 2-hop graph analysis.',
-    disabled: true
+    disabled: false
   },
   {
     id: 'RT4',
     name: 'High-Risk Batch Score',
     description: 'Use batch-computed fraud scores for real-time decisions',
     riskLevel: 'Medium',
-    enabled: false,
+    enabled: true,
     priority: 'Phase 1',
     keyIndicators: [
       'High fraud score from batch processing',
@@ -160,7 +160,7 @@ const fraudScenarios: FraudScenario[] = [
     ],
     commonUseCase: 'Leveraging historical analysis for real-time decisions',
     detailedDescription: 'Utilizes fraud scores computed during batch processing for real-time transaction assessment, combining historical pattern analysis with immediate decision making.',
-    disabled: true
+    disabled: false
   },
   {
     id: 'RT5',
@@ -214,7 +214,7 @@ const fraudScenarios: FraudScenario[] = [
     name: 'Multiple Large ATM Withdrawals',
     description: 'Systematic cash extraction pattern',
     riskLevel: 'Medium-High',
-    enabled: false,
+    enabled: true,
     priority: 'Phase 2',
     keyIndicators: [
       '3+ ATM withdrawal transactions',
@@ -245,7 +245,7 @@ const fraudScenarios: FraudScenario[] = [
     name: 'Salary-Like Deposits → Suspicious Transfers',
     description: 'Account takeover mimicry',
     riskLevel: 'Medium-High',
-    enabled: false,
+    enabled: true,
     priority: 'Phase 2',
     keyIndicators: [
             'Initial credit ₹4,00,000-₹8,00,000',
@@ -260,7 +260,7 @@ const fraudScenarios: FraudScenario[] = [
     name: 'Dormant Account Sudden Activity',
     description: 'Account compromise indicator',
     riskLevel: 'High',
-    enabled: false,
+    enabled: true,
     priority: 'Phase 2',
     keyIndicators: [
       '30+ days dormancy',
@@ -276,7 +276,7 @@ const fraudScenarios: FraudScenario[] = [
     name: 'International High-Risk Transfers',
     description: 'Cross-border money laundering',
     riskLevel: 'High',
-    enabled: false,
+    enabled: true,
     priority: 'Phase 3',
     keyIndicators: [
       '5+ international transfers',
@@ -292,7 +292,7 @@ const fraudScenarios: FraudScenario[] = [
     name: 'Region-Specific Fraud (Indian)',
     description: 'Localized fraud patterns',
     riskLevel: 'High',
-    enabled: false,
+    enabled: true,
     priority: 'Phase 3',
     keyIndicators: [
             '3+ large transfers ₹8,00,000-₹40,00,000',
@@ -337,8 +337,8 @@ const availablePatterns: ExtendedFraudPattern[] = [
     description: 'Organized money distribution pattern',
     risk_level: 'high',
     priority: 'Phase 1',
-    enabled: false,
-    disabled: true,
+    enabled: true,
+    disabled: false,
     keyIndicators: [
       'Large credit (₹8,00,000-₹40,00,000)',
       'Exactly 4 equal debits within 4 hours',
@@ -368,8 +368,8 @@ const availablePatterns: ExtendedFraudPattern[] = [
     description: 'Detect circular money flows between users',
     risk_level: 'high',
     priority: 'Phase 1',
-    enabled: false,
-    disabled: true
+    enabled: true,
+    disabled: false
   },
   {
     id: 'high_amount',
@@ -377,8 +377,8 @@ const availablePatterns: ExtendedFraudPattern[] = [
     description: 'Detect unusually high transaction amounts',
     risk_level: 'high',
     priority: 'Phase 1',
-    enabled: false,
-    disabled: true
+    enabled: true,
+    disabled: false
   },
   {
     id: 'new_user_high_activity',
@@ -396,8 +396,8 @@ const availablePatterns: ExtendedFraudPattern[] = [
     description: 'Systematic cash extraction pattern',
     risk_level: 'medium',
     priority: 'Phase 2',
-    enabled: false,
-    disabled: true,
+    enabled: true,
+    disabled: false,
     keyIndicators: [
       '3+ ATM withdrawal transactions',
       'Each withdrawal ₹4,00,000-₹8,00,000',
@@ -412,8 +412,8 @@ const availablePatterns: ExtendedFraudPattern[] = [
     description: 'Account takeover mimicry',
     risk_level: 'medium',
     priority: 'Phase 2',
-    enabled: false,
-    disabled: true,
+    enabled: true,
+    disabled: false,
     keyIndicators: [
       'Initial credit ₹4,00,000-₹8,00,000',
       '3+ outgoing transfers',
@@ -428,8 +428,8 @@ const availablePatterns: ExtendedFraudPattern[] = [
     description: 'Account compromise indicator',
     risk_level: 'high',
     priority: 'Phase 2',
-    enabled: false,
-    disabled: true,
+    enabled: true,
+    disabled: false,
     keyIndicators: [
       '30+ days dormancy',
       'Sudden large credit ₹8,00,000-₹40,00,000',
@@ -444,8 +444,8 @@ const availablePatterns: ExtendedFraudPattern[] = [
     description: 'Detect transactions from the same device by different users',
     risk_level: 'medium',
     priority: 'Phase 2',
-    enabled: false,
-    disabled: true
+    enabled: true,
+    disabled: false
   },
 
   {
@@ -454,8 +454,8 @@ const availablePatterns: ExtendedFraudPattern[] = [
     description: 'Detect transactions between users in different locations',
     risk_level: 'medium',
     priority: 'Phase 2',
-    enabled: false,
-    disabled: true
+    enabled: true,
+    disabled: false
   },
   
   // Phase 3 - Lower Priority Patterns
@@ -465,8 +465,8 @@ const availablePatterns: ExtendedFraudPattern[] = [
     description: 'Cross-border money laundering',
     risk_level: 'high',
     priority: 'Phase 3',
-    enabled: false,
-    disabled: true,
+    enabled: true,
+    disabled: false,
     keyIndicators: [
       '5+ international transfers',
       'Amounts ₹40,000-₹4,00,000 each',
@@ -481,8 +481,8 @@ const availablePatterns: ExtendedFraudPattern[] = [
     description: 'Localized fraud patterns',
     risk_level: 'high',
     priority: 'Phase 3',
-    enabled: false,
-    disabled: true,
+    enabled: true,
+    disabled: false,
     keyIndicators: [
       '3+ large transfers ₹8,00,000-₹40,00,000',
       'High-risk locations',
@@ -616,7 +616,13 @@ export default function AdminPage() {
             
             // Update recent transactions
             if (statusData.last_10_transactions) {
-              setRecentTransactions(statusData.last_10_transactions)
+              // Sort transactions by timestamp (most recent first)
+              const sortedTransactions = statusData.last_10_transactions.sort((a: any, b: any) => {
+                const dateA = new Date(a.timestamp)
+                const dateB = new Date(b.timestamp)
+                return dateB.getTime() - dateA.getTime()
+              })
+              setRecentTransactions(sortedTransactions)
             }
           }
         } catch (err) {
@@ -655,7 +661,13 @@ export default function AdminPage() {
           }
           
           if (statusData.last_10_transactions) {
-            setRecentTransactions(statusData.last_10_transactions)
+            // Sort transactions by timestamp (most recent first)
+            const sortedTransactions = statusData.last_10_transactions.sort((a: any, b: any) => {
+              const dateA = new Date(a.timestamp)
+              const dateB = new Date(b.timestamp)
+              return dateB.getTime() - dateA.getTime()
+            })
+            setRecentTransactions(sortedTransactions)
           }
         }
       } catch (err) {

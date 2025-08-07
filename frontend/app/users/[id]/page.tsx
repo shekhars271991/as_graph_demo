@@ -151,10 +151,22 @@ export default function UserDetailPage() {
             }
           })
         )
-        setDetailedTransactions(detailedData)
+        // Sort detailed transactions by timestamp (most recent first)
+        const sortedDetailedTransactions = detailedData.sort((a, b) => {
+          const dateA = new Date(a.timestamp)
+          const dateB = new Date(b.timestamp)
+          return dateB.getTime() - dateA.getTime()
+        })
+        setDetailedTransactions(sortedDetailedTransactions)
       } catch (error) {
         console.error('Error fetching detailed transactions:', error)
-        setDetailedTransactions(userDetails.recent_transactions) // fallback
+        // Sort fallback transactions by timestamp (most recent first)
+        const sortedFallbackTransactions = userDetails.recent_transactions.sort((a, b) => {
+          const dateA = new Date(a.timestamp)
+          const dateB = new Date(b.timestamp)
+          return dateB.getTime() - dateA.getTime()
+        })
+        setDetailedTransactions(sortedFallbackTransactions) // fallback
       } finally {
         setTransactionsLoading(false)
       }

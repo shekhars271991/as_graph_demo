@@ -62,7 +62,13 @@ export default function TransactionsPage() {
       })
       
       const data: PaginatedTransactions = response.data
-      setTransactions(data.transactions)
+      // Sort transactions by timestamp (most recent first)
+      const sortedTransactions = data.transactions.sort((a, b) => {
+        const dateA = new Date(a.timestamp)
+        const dateB = new Date(b.timestamp)
+        return dateB.getTime() - dateA.getTime()
+      })
+      setTransactions(sortedTransactions)
       setTotalPages(data.total_pages)
       setTotalTransactions(data.total)
     } catch (error) {
@@ -89,7 +95,13 @@ export default function TransactionsPage() {
       })
       
       const data: PaginatedTransactions = response.data
-      setTransactions(data.transactions)
+      // Sort transactions by timestamp (most recent first)
+      const sortedTransactions = data.transactions.sort((a, b) => {
+        const dateA = new Date(a.timestamp)
+        const dateB = new Date(b.timestamp)
+        return dateB.getTime() - dateA.getTime()
+      })
+      setTransactions(sortedTransactions)
       setTotalPages(data.total_pages)
       setTotalTransactions(data.total)
       setCurrentPage(1)
