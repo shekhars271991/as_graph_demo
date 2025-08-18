@@ -11,6 +11,7 @@ import sys
 import argparse
 
 from services.graph_service import GraphService
+from services.rt1_fraud_service import RT1FraudService
 
 from services.transaction_generator import get_transaction_generator
 from models.schemas import (
@@ -498,6 +499,151 @@ async def get_user_connected_devices(user_id: str = Path(..., description="User 
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get connected device users: {str(e)}")
+
+# Performance Metrics API Endpoints
+@app.get("/performance/stats")
+async def get_performance_stats():
+    """Get aggregate performance statistics for RT1 fraud detection service"""
+    try:
+        # Initialize RT1 service to get performance stats
+        rt1_service = RT1FraudService(graph_service)
+        stats = await rt1_service.get_performance_stats()
+        
+        if "error" in stats:
+            raise HTTPException(status_code=500, detail=stats["error"])
+        
+        return {
+            "service": "RT1_Fraud_Service",
+            "stats": stats,
+            "timestamp": datetime.now().isoformat()
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Failed to get performance stats: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get performance stats: {str(e)}")
+
+@app.get("/performance/logs")
+async def get_performance_logs(
+    limit: int = Query(10, ge=1, le=100, description="Maximum number of logs to return"),
+    transaction_id: Optional[str] = Query(None, description="Filter by specific transaction ID")
+):
+    """Get performance logs for RT1 fraud detection service"""
+    try:
+        # Initialize RT1 service
+        rt1_service = RT1FraudService(graph_service)
+        
+        if transaction_id:
+            # Get specific transaction log
+            try:
+                # Get the native Aerospike client from the RT1 service
+                if not rt1_service.aerospike_client:
+                    raise HTTPException(status_code=500, detail="Aerospike client not available")
+                
+                loop = asyncio.get_event_loop()
+                
+                def fetch_specific_log():
+                    try:
+                        log_key = ('logs', None, f'rt1_perf_log:{transaction_id}')
+                        (key, meta, log_data) = rt1_service.aerospike_client.get(log_key)
+                        return log_data
+                    except Exception as e:
+                        if "Record not found" in str(e):
+                            return None
+                        else:
+                            raise e
+                
+                log_data = await loop.run_in_executor(None, fetch_specific_log)
+                
+                if not log_data:
+                    raise HTTPException(status_code=404, detail=f"Performance log not found for transaction {transaction_id}")
+                
+                return {
+                    "transaction_id": transaction_id,
+                    "log": log_data,
+                    "timestamp": datetime.now().isoformat()
+                }
+                
+            except Exception as e:
+                if "404" in str(e):
+                    raise HTTPException(status_code=404, detail=f"Performance log not found for transaction {transaction_id}")
+                else:
+                    raise HTTPException(status_code=500, detail=f"Failed to fetch performance log: {str(e)}")
+        else:
+            # Get recent performance logs (limited by the specified limit)
+            # Since Aerospike doesn't support wildcard queries, we'll return a message
+            # about how to query specific logs
+            return {
+                "message": "To get specific performance logs, use the transaction_id parameter",
+                "example": f"/performance/logs?transaction_id=your_transaction_id",
+                "note": "Aerospike doesn't support wildcard queries, so you need to know the specific transaction ID",
+                "available_endpoints": [
+                    "/performance/stats - Get aggregate statistics",
+                    "/performance/logs?transaction_id={id} - Get specific transaction log"
+                ],
+                "timestamp": datetime.now().isoformat()
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Failed to get performance logs: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get performance logs: {str(e)}")
+
+@app.get("/performance/overview")
+async def get_performance_overview():
+    """Get comprehensive performance overview including stats and recent logs"""
+    try:
+        # Initialize RT1 service
+        rt1_service = RT1FraudService(graph_service)
+        
+        # Get aggregate stats
+        stats = await rt1_service.get_performance_stats()
+        
+        # Get some recent logs (try to find a few)
+        recent_logs = []
+        
+        if rt1_service.aerospike_client:
+            loop = asyncio.get_event_loop()
+            
+            def fetch_sample_logs():
+                try:
+                    logs = []
+                    # Try to get some sample logs by looking for common patterns
+                    sample_keys = [
+                        'rt1_perf_log:test_tx_001',
+                        'rt1_perf_log:test_tx_002'
+                    ]
+                    
+                    for key_name in sample_keys:
+                        try:
+                            log_key = ('logs', None, key_name)
+                            (key, meta, log_data) = rt1_service.aerospike_client.get(log_key)
+                            if log_data:
+                                logs.append(log_data)
+                        except:
+                            continue
+                    
+                    return logs
+                except Exception as e:
+                    logger.error(f"Error fetching sample logs: {e}")
+                    return []
+            
+            recent_logs = await loop.run_in_executor(None, fetch_sample_logs)
+        
+        return {
+            "service": "RT1_Fraud_Service",
+            "overview": {
+                "stats": stats,
+                "recent_logs_count": len(recent_logs),
+                "sample_logs": recent_logs[:3] if recent_logs else []  # Return max 3 sample logs
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Failed to get performance overview: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get performance overview: {str(e)}")
 
 if __name__ == "__main__":
     args = parse_arguments() # Parse arguments here
