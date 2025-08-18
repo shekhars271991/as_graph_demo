@@ -8,6 +8,12 @@ services:
       - "3000-3002:3000-3002"
     environment:
       - DEFAULT_TTL=0
+      - DATA_IN_MEMORY=false
+      - MEM_GB=1
+      - STORAGE_GB=4
+      - NSUP_PERIOD=120
+    volumes:
+      - ./aerospike-template.conf:/etc/aerospike/aerospike.template.conf
     healthcheck:
       test: ["CMD", "asinfo", "-p", "3000", "-v", "build"]
       interval: 5s
@@ -34,6 +40,7 @@ services:
       - aerospike.graph.query-tracing.opentelemetry-host=zipkin
     volumes:
       - ./:/data
+
     networks:
       - asgraph_net
   zipkin:
